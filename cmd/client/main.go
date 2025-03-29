@@ -9,10 +9,13 @@ import (
 	"path"
 
 	"github.com/llravell/go-pass/cmd/client/commands"
-	cliController "github.com/llravell/go-pass/internal/controller/cli"
 	"github.com/llravell/go-pass/internal/repository"
+	usecase "github.com/llravell/go-pass/internal/usecase/client"
+	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/pressly/goose/v3"
 	"github.com/urfave/cli/v3"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	_ "modernc.org/sqlite"
 )
 
@@ -57,14 +60,23 @@ func initStorage() (*sql.DB, error) {
 }
 
 func buildCmd(db *sql.DB) *cli.Command {
+	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
 	sessionRepo := repository.NewSessionSqliteRepository(db)
-	authCliController := cliController.NewAuthController(sessionRepo)
+	authClient := pb.NewAuthClient(conn)
+	authUseCase := usecase.NewAuthUseCase(sessionRepo, authClient)
+
+	authComands := commands.NewAuthCommands(authUseCase)
 
 	return &cli.Command{
 		Name: "GOPASS",
 		Commands: []*cli.Command{
-			commands.RegisterCommand(authCliController),
-			commands.LoginCommand(authCliController),
+			authComands.Login(),
+			authComands.Register(),
 		},
 	}
 }

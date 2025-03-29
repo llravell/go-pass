@@ -11,6 +11,7 @@ import (
 const (
 	loginKey      = "login"
 	masterPassKey = "master_password"
+	authTokenKey  = "auth_token"
 )
 
 type SessionSqliteRepository struct {
@@ -52,7 +53,12 @@ func (repo *SessionSqliteRepository) SetSession(
 		VALUES
 			(?, ?),
 			(?, ?);
-	`, loginKey, session.Login, masterPassKey, session.MasterPassHash)
+			(?, ?);
+	`,
+		loginKey, session.Login,
+		masterPassKey, session.MasterPassHash,
+		authTokenKey, session.AuthToken,
+	)
 
 	return err
 }

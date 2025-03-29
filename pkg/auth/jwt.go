@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -24,10 +25,10 @@ func NewJWTManager(secret string) *JWTManager {
 	}
 }
 
-func (m *JWTManager) Issue(userUUID string, ttl time.Duration) (string, error) {
+func (m *JWTManager) Issue(userID int, ttl time.Duration) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
-		Subject:   userUUID,
+		Subject:   strconv.Itoa(userID),
 	})
 
 	tokenString, err := token.SignedString(m.secret)
