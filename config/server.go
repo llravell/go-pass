@@ -1,4 +1,4 @@
-package main
+package config
 
 import (
 	"errors"
@@ -15,14 +15,14 @@ const (
 
 var ErrEmptyDatabaseURI = errors.New("got empty database uri")
 
-type config struct {
+type ServerConfig struct {
 	Addr        string `env:"GRPC_ADDRESS"`
 	DatabaseURI string `env:"DATABASE_URI"`
 	JWTSecret   string `env:"JWT_SECRET"`
 }
 
-func buildConfig() (*config, error) {
-	cfg := &config{
+func NewServerConfig() (*ServerConfig, error) {
+	cfg := &ServerConfig{
 		Addr:        _defaultAddr,
 		DatabaseURI: _defaultDatabaseURI,
 		JWTSecret:   _defaultJWTSecret,
@@ -43,7 +43,7 @@ func buildConfig() (*config, error) {
 	return cfg, nil
 }
 
-func (c *config) Validate() error {
+func (c *ServerConfig) Validate() error {
 	if c.DatabaseURI == "" {
 		return ErrEmptyDatabaseURI
 	}

@@ -39,7 +39,7 @@ func (auth *AuthCommands) Register() *cli.Command {
 
 			err := auth.authUC.Register(ctx, login, password)
 			if err != nil {
-				return cli.Exit("registration failed", 1)
+				return cli.Exit(err, 1)
 			}
 
 			return nil
@@ -66,9 +66,9 @@ func (auth *AuthCommands) Login() *cli.Command {
 			login := strings.TrimSpace(c.String("login"))
 			password := strings.TrimSpace(c.String("password"))
 
-			err := auth.authUC.Register(ctx, login, password)
+			err := auth.authUC.Login(ctx, login, password)
 			if err != nil {
-				return cli.Exit("login failed", 1)
+				return cli.Exit(err, 1)
 			}
 
 			return nil

@@ -12,6 +12,14 @@ lint: ### run linter
 test: ### run tests
 	go test ./...
 
+.PHONY: server
+server: ### run grpc server
+	go run ./cmd/server/main.go
+
+.PHONY: server-migrations
+server-migrations: ### up server migrations
+	go run ./cmd/server-migrations/main.go
+
 .PHONY: reqs
 reqs: ### install binary deps to bin/
 	GOBIN=$(LOCAL_BIN) go install go.uber.org/mock/mockgen@latest

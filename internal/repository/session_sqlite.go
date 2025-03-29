@@ -52,7 +52,7 @@ func (repo *SessionSqliteRepository) SetSession(
 		INSERT OR REPLACE INTO session (key, value)
 		VALUES
 			(?, ?),
-			(?, ?);
+			(?, ?),
 			(?, ?);
 	`,
 		loginKey, session.Login,

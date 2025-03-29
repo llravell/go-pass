@@ -46,6 +46,7 @@ func initStorage() (*sql.DB, error) {
 	}
 
 	passDirPath := path.Join(homeDirPath, passDir)
+
 	err = os.MkdirAll(passDirPath, os.ModePerm)
 	if err != nil {
 		return nil, err
@@ -60,11 +61,10 @@ func initStorage() (*sql.DB, error) {
 }
 
 func buildCmd(db *sql.DB) *cli.Command {
-	conn, err := grpc.Dial(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer conn.Close()
 
 	sessionRepo := repository.NewSessionSqliteRepository(db)
 	authClient := pb.NewAuthClient(conn)
@@ -77,17 +77,22 @@ func buildCmd(db *sql.DB) *cli.Command {
 		Commands: []*cli.Command{
 			authComands.Login(),
 			authComands.Register(),
+
+			&cli.Command{
+				Name: "init",
+				Action: func(context.Context, *cli.Command) error {
+					return runMigrations(db)
+				},
+			},
+		},
+		After: func(context.Context, *cli.Command) error {
+			return conn.Close()
 		},
 	}
 }
 
 func main() {
 	db, err := initStorage()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = runMigrations(db)
 	if err != nil {
 		log.Fatal(err)
 	}

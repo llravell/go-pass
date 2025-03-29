@@ -5,6 +5,7 @@ import (
 	"net"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/llravell/go-pass/config"
 	"github.com/llravell/go-pass/internal/grpc/server"
 	"github.com/llravell/go-pass/internal/repository"
 	usecase "github.com/llravell/go-pass/internal/usecase/server"
@@ -16,10 +17,10 @@ import (
 
 func main() {
 	log := logger.Get()
-	cfg, err := buildConfig()
 
+	cfg, err := config.NewServerConfig()
 	if err != nil {
-		log.Fatal().Err(err)
+		log.Fatal().Err(err).Msg("config building failed")
 	}
 
 	db, err := sql.Open("pgx", cfg.DatabaseURI)
@@ -42,6 +43,8 @@ func main() {
 
 	server := grpc.NewServer()
 	pb.RegisterAuthServer(server, authServer)
+
+	log.Info().Msgf("server started on %s", cfg.Addr)
 
 	if err := server.Serve(listen); err != nil {
 		log.Error().Err(err).Msg("server has been closed")
