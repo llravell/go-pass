@@ -18,5 +18,6 @@ type (
 		GetPasswordByName(ctx context.Context, name string) (*entity.Password, error)
 		CreateNewPassword(ctx context.Context, password *entity.Password) error
 		UpdatePassword(ctx context.Context, password *entity.Password) error
+		GetPasswords(ctx context.Context) ([]*entity.Password, error)
 	}
 )

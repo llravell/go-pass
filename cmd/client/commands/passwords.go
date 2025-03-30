@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"strings"
@@ -13,17 +14,76 @@ import (
 )
 
 type PasswordsCommands struct {
-	passwordsUC        *usecase.PasswordsUseCase
-	masterPassPrompter *components.MasterPassPrompter
+	passwordsUC *usecase.PasswordsUseCase
+	keyProvider *components.EncryptionKeyProvider
 }
 
 func NewPasswordsCommands(
 	passwordsUC *usecase.PasswordsUseCase,
-	masterPassPrompter *components.MasterPassPrompter,
+	keyProvider *components.EncryptionKeyProvider,
 ) *PasswordsCommands {
 	return &PasswordsCommands{
-		passwordsUC:        passwordsUC,
-		masterPassPrompter: masterPassPrompter,
+		passwordsUC: passwordsUC,
+		keyProvider: keyProvider,
+	}
+}
+
+func (p *PasswordsCommands) List() *cli.Command {
+	return &cli.Command{
+		Name: "list",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			passwords, err := p.passwordsUC.GetList(ctx)
+			if err != nil {
+				return err
+			}
+
+			if len(passwords) == 0 {
+				cmd.Writer.Write([]byte("you don't have any passwords yet\n"))
+
+				return nil
+			}
+
+			writer := bufio.NewWriter(cmd.Writer)
+
+			for _, password := range passwords {
+				writer.WriteString(password.Name + "\n")
+			}
+
+			writer.Flush()
+
+			return nil
+		},
+	}
+}
+
+func (p *PasswordsCommands) Show() *cli.Command {
+	return &cli.Command{
+		Name: "show",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			name := strings.TrimSpace(cmd.Args().Get(0))
+			if len(name) == 0 {
+				return cli.Exit("got empty name", 1)
+			}
+
+			pass, err := p.passwordsUC.GetPasswordByName(ctx, name)
+			if err != nil {
+				return err
+			}
+
+			key, err := p.keyProvider.Get(ctx)
+			if err != nil {
+				return err
+			}
+
+			rawPassword, err := key.Decrypt(pass.Value)
+			if err != nil {
+				return err
+			}
+
+			cmd.Writer.Write([]byte(rawPassword + "\n"))
+
+			return nil
+		},
 	}
 }
 
@@ -45,12 +105,12 @@ func (p *PasswordsCommands) Add() *cli.Command {
 				return cli.Exit("got invalid args", 1)
 			}
 
-			masterPassword, err := p.masterPassPrompter.PromptAndValidate(ctx)
+			key, err := p.keyProvider.Get(ctx)
 			if err != nil {
 				return err
 			}
 
-			return p.passwordsUC.AddNewPassword(ctx, masterPassword, name, password, meta)
+			return p.passwordsUC.AddNewPassword(ctx, key, name, password, meta)
 		},
 	}
 }
@@ -69,12 +129,10 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 				return err
 			}
 
-			masterPassword, err := p.masterPassPrompter.PromptAndValidate(ctx)
+			key, err := p.keyProvider.Get(ctx)
 			if err != nil {
 				return err
 			}
-
-			key := encryption.GenerateKeyFromMasterPass(masterPassword)
 
 			editText, err := p.buildPasswordEditText(pass, key)
 			if err != nil {
@@ -107,8 +165,6 @@ func (p *PasswordsCommands) buildPasswordEditText(
 		return "", err
 	}
 
-	fmt.Println("REAL META --->", password.Meta)
-
 	return fmt.Sprintf("%s\n%s", decryptedPass, password.Meta), nil
 }
 
@@ -123,8 +179,6 @@ func (p *PasswordsCommands) parsePasswordEditText(
 	if len(parts) == 0 {
 		return cli.Exit("empty password", 1)
 	}
-
-	fmt.Println(parts)
 
 	rawPassword = strings.TrimSpace(parts[0])
 	if len(parts) > 1 {

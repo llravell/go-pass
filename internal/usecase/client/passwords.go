@@ -21,7 +21,7 @@ func NewPasswordsUseCase(
 
 func (p *PasswordsUseCase) AddNewPassword(
 	ctx context.Context,
-	masterPassword string,
+	key *encryption.Key,
 	name, password, meta string,
 ) error {
 	exists, err := p.passwordRepo.PasswordExists(ctx, name)
@@ -32,8 +32,6 @@ func (p *PasswordsUseCase) AddNewPassword(
 	if exists {
 		return entity.ErrPasswordAlreadyExist
 	}
-
-	key := encryption.GenerateKeyFromMasterPass(masterPassword)
 
 	encryptedPass, err := key.Encrypt(password)
 	if err != nil {
@@ -66,4 +64,10 @@ func (p *PasswordsUseCase) UpdatePassword(
 	password *entity.Password,
 ) error {
 	return p.passwordRepo.UpdatePassword(ctx, password)
+}
+
+func (p *PasswordsUseCase) GetList(
+	ctx context.Context,
+) ([]*entity.Password, error) {
+	return p.passwordRepo.GetPasswords(ctx)
 }

@@ -10,21 +10,23 @@ import (
 	"strings"
 
 	usecase "github.com/llravell/go-pass/internal/usecase/client"
+	"github.com/llravell/go-pass/pkg/encryption"
 )
 
 var ErrEmptyMasterPassword = errors.New("got empty master password")
 
-type MasterPassPrompter struct {
+type EncryptionKeyProvider struct {
 	authUC *usecase.AuthUseCase
+	key    *encryption.Key
 }
 
-func NewMasterPassPrompter(authUC *usecase.AuthUseCase) *MasterPassPrompter {
-	return &MasterPassPrompter{
+func NewEncryptionKeyProvider(authUC *usecase.AuthUseCase) *EncryptionKeyProvider {
+	return &EncryptionKeyProvider{
 		authUC: authUC,
 	}
 }
 
-func (p *MasterPassPrompter) PromptAndValidate(ctx context.Context) (string, error) {
+func (p *EncryptionKeyProvider) promptMasterPassword(ctx context.Context) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
 	fmt.Print("Enter master password: ")
@@ -44,4 +46,24 @@ func (p *MasterPassPrompter) PromptAndValidate(ctx context.Context) (string, err
 	}
 
 	return masterPassword, nil
+}
+
+func (p *EncryptionKeyProvider) Get(ctx context.Context) (*encryption.Key, error) {
+	if p.key != nil {
+		return p.key, nil
+	}
+
+	masterPassword, err := p.promptMasterPassword(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.authUC.ValidateMasterPassword(ctx, masterPassword)
+	if err != nil {
+		return nil, err
+	}
+
+	p.key = encryption.GenerateKeyFromMasterPass(masterPassword)
+
+	return p.key, nil
 }

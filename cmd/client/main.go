@@ -74,9 +74,9 @@ func buildCmd(db *sql.DB) *cli.Command {
 	authUseCase := usecase.NewAuthUseCase(sessionRepo, authClient)
 	passwordsUseCase := usecase.NewPasswordsUseCase(passwordsRepo)
 
-	masterPassPrompter := components.NewMasterPassPrompter(authUseCase)
+	encryptionKeyProvider := components.NewEncryptionKeyProvider(authUseCase)
 	authCommands := commands.NewAuthCommands(authUseCase)
-	passwordsCommands := commands.NewPasswordsCommands(passwordsUseCase, masterPassPrompter)
+	passwordsCommands := commands.NewPasswordsCommands(passwordsUseCase, encryptionKeyProvider)
 
 	return &cli.Command{
 		Name: "GOPASS",
@@ -93,6 +93,8 @@ func buildCmd(db *sql.DB) *cli.Command {
 			&cli.Command{
 				Name: "passwords",
 				Commands: []*cli.Command{
+					passwordsCommands.List(),
+					passwordsCommands.Show(),
 					passwordsCommands.Add(),
 					passwordsCommands.Edit(),
 				},
