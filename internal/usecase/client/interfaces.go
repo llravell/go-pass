@@ -13,4 +13,10 @@ type (
 		GetSession(ctx context.Context) (*entity.ClientSession, error)
 		SetSession(ctx context.Context, session *entity.ClientSession) error
 	}
+	PasswordRepository interface {
+		PasswordExists(ctx context.Context, name string) (bool, error)
+		GetPasswordByName(ctx context.Context, name string) (*entity.Password, error)
+		CreateNewPassword(ctx context.Context, password *entity.Password) error
+		UpdatePassword(ctx context.Context, password *entity.Password) error
+	}
 )

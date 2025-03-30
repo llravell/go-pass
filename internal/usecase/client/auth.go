@@ -53,6 +53,22 @@ func (auth *AuthUseCase) Login(
 	return auth.saveUserSession(ctx, login, password, resp.Token)
 }
 
+func (auth *AuthUseCase) ValidateMasterPassword(
+	ctx context.Context,
+	masterPassword string,
+) error {
+	session, err := auth.sessionRepo.GetSession(ctx)
+	if err != nil {
+		return err
+	}
+
+	if len(session.MasterPassHash) == 0 {
+		return entity.ErrNoSession
+	}
+
+	return bcrypt.CompareHashAndPassword([]byte(session.MasterPassHash), []byte(masterPassword))
+}
+
 func (auth *AuthUseCase) saveUserSession(
 	ctx context.Context,
 	login, password, authToken string,

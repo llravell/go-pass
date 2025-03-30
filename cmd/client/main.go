@@ -9,6 +9,7 @@ import (
 	"path"
 
 	"github.com/llravell/go-pass/cmd/client/commands"
+	"github.com/llravell/go-pass/cmd/client/components"
 	"github.com/llravell/go-pass/internal/repository"
 	usecase "github.com/llravell/go-pass/internal/usecase/client"
 	pb "github.com/llravell/go-pass/pkg/grpc"
@@ -67,21 +68,33 @@ func buildCmd(db *sql.DB) *cli.Command {
 	}
 
 	sessionRepo := repository.NewSessionSqliteRepository(db)
+	passwordsRepo := repository.NewPasswordsSqliteRepository(db)
 	authClient := pb.NewAuthClient(conn)
-	authUseCase := usecase.NewAuthUseCase(sessionRepo, authClient)
 
-	authComands := commands.NewAuthCommands(authUseCase)
+	authUseCase := usecase.NewAuthUseCase(sessionRepo, authClient)
+	passwordsUseCase := usecase.NewPasswordsUseCase(passwordsRepo)
+
+	masterPassPrompter := components.NewMasterPassPrompter(authUseCase)
+	authCommands := commands.NewAuthCommands(authUseCase)
+	passwordsCommands := commands.NewPasswordsCommands(passwordsUseCase, masterPassPrompter)
 
 	return &cli.Command{
 		Name: "GOPASS",
 		Commands: []*cli.Command{
-			authComands.Login(),
-			authComands.Register(),
+			authCommands.Login(),
+			authCommands.Register(),
 
 			&cli.Command{
 				Name: "init",
 				Action: func(context.Context, *cli.Command) error {
 					return runMigrations(db)
+				},
+			},
+			&cli.Command{
+				Name: "passwords",
+				Commands: []*cli.Command{
+					passwordsCommands.Add(),
+					passwordsCommands.Edit(),
 				},
 			},
 		},

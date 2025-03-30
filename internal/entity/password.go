@@ -5,6 +5,7 @@ type Password struct {
 	Value   string
 	Meta    string
 	Version int
+	Deleted bool
 }
 
 func (pass *Password) BumpVersion() {
