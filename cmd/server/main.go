@@ -36,17 +36,25 @@ func main() {
 	}
 
 	jwtManager := auth.NewJWTManager(cfg.JWTSecret)
+
 	usersRepository := repository.NewUsersRepository(db)
+	passwordsRepository := repository.NewPasswordsPostgresRepository(db)
+
 	authUsecase := usecase.NewAuthUseCase(usersRepository, jwtManager)
+	passwordsUsecase := usecase.NewPasswordsUseCase(passwordsRepository)
 
 	authServer := server.NewAuthServer(authUsecase, &log)
+	passwordsServer := server.NewPasswordsServer(passwordsUsecase, &log)
 
-	server := grpc.NewServer()
-	pb.RegisterAuthServer(server, authServer)
+	srv := grpc.NewServer(
+		grpc.UnaryInterceptor(server.AuthServerInterceptor(jwtManager)),
+	)
+	pb.RegisterAuthServer(srv, authServer)
+	pb.RegisterPasswordsServer(srv, passwordsServer)
 
 	log.Info().Msgf("server started on %s", cfg.Addr)
 
-	if err := server.Serve(listen); err != nil {
+	if err := srv.Serve(listen); err != nil {
 		log.Error().Err(err).Msg("server has been closed")
 	}
 }

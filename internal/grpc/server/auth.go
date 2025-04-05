@@ -69,3 +69,8 @@ func (s *AuthServer) Login(ctx context.Context, in *pb.AuthRequest) (*pb.AuthRes
 
 	return &pb.AuthResponse{Token: token}, nil
 }
+
+// AuthFuncOverride отключает проверку авторизации в интерсепторе AuthServerInterceptor.
+func (s *AuthServer) AuthFuncOverride(ctx context.Context, _ string) (context.Context, error) {
+	return ctx, nil
+}

@@ -19,6 +19,13 @@ type JWTParser interface {
 	Parse(tokenString string) (*jwt.Token, error)
 }
 
+func GetUserIDFromContext(ctx context.Context) (int, bool) {
+	value := ctx.Value(UserIDContextKey)
+	id, ok := value.(int)
+
+	return id, ok
+}
+
 func getUserIDFromToken(token *jwt.Token) int {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
