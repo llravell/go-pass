@@ -44,7 +44,6 @@ func (p *PasswordsUseCase) AddNewPassword(
 		Meta:    meta,
 		Version: 1,
 	})
-
 	if err != nil {
 		return err
 	}

@@ -83,7 +83,7 @@ func (repo *PasswordsSqliteRepository) PasswordExists(
 	ctx context.Context,
 	name string,
 ) (bool, error) {
-	var passwordId int
+	var passwordID int
 
 	row := repo.conn.QueryRowContext(ctx, `
 		SELECT id
@@ -91,7 +91,7 @@ func (repo *PasswordsSqliteRepository) PasswordExists(
 		WHERE name=? AND NOT is_deleted;
 	`, name)
 
-	err := row.Scan(&passwordId)
+	err := row.Scan(&passwordID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil
@@ -100,7 +100,7 @@ func (repo *PasswordsSqliteRepository) PasswordExists(
 		return false, err
 	}
 
-	return passwordId > 0, nil
+	return passwordID > 0, nil
 }
 
 func (repo *PasswordsSqliteRepository) CreateNewPassword(
@@ -112,7 +112,6 @@ func (repo *PasswordsSqliteRepository) CreateNewPassword(
 		VALUES
 			(?, ?, ?, ?);
 	`, password.Name, password.Value, password.Meta, password.Version)
-
 	if err != nil {
 		return err
 	}
@@ -129,7 +128,6 @@ func (repo *PasswordsSqliteRepository) UpdatePassword(
 		SET encrypted_pass=?, meta=?, version=?
 		WHERE name=?;
 	`, password.Value, password.Meta, password.Version, password.Name)
-
 	if err != nil {
 		return err
 	}

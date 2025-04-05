@@ -29,7 +29,9 @@ func NewEncryptionKeyProvider(authUC *usecase.AuthUseCase) *EncryptionKeyProvide
 func (p *EncryptionKeyProvider) promptMasterPassword(ctx context.Context) (string, error) {
 	reader := bufio.NewReader(os.Stdin)
 
+	//nolint:forbidigo
 	fmt.Print("Enter master password: ")
+
 	input, err := reader.ReadString('\n')
 	if err != nil && !errors.Is(err, io.EOF) {
 		return "", err

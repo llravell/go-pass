@@ -32,7 +32,9 @@ func main() {
 
 	listen, err := net.Listen("tcp", cfg.Addr)
 	if err != nil {
-		log.Fatal().Err(err).Msg("tcp listen error")
+		log.Error().Err(err).Msg("tcp listen error")
+
+		return
 	}
 
 	jwtManager := auth.NewJWTManager(cfg.JWTSecret)

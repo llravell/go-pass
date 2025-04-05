@@ -23,8 +23,10 @@ import (
 //go:embed migrations/*.sql
 var embedMigrations embed.FS
 
-const passDir = ".go_pass"
-const dbName = "pass.db"
+const (
+	passDir = ".go_pass"
+	dbName  = "pass.db"
+)
 
 func runMigrations(db *sql.DB) error {
 	goose.SetBaseFS(embedMigrations)
@@ -84,13 +86,13 @@ func buildCmd(db *sql.DB) *cli.Command {
 			authCommands.Login(),
 			authCommands.Register(),
 
-			&cli.Command{
+			{
 				Name: "init",
 				Action: func(context.Context, *cli.Command) error {
 					return runMigrations(db)
 				},
 			},
-			&cli.Command{
+			{
 				Name: "passwords",
 				Commands: []*cli.Command{
 					passwordsCommands.List(),

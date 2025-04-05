@@ -38,15 +38,18 @@ func (p *PasswordsCommands) List() *cli.Command {
 			}
 
 			if len(passwords) == 0 {
-				cmd.Writer.Write([]byte("you don't have any passwords yet\n"))
+				_, err = cmd.Writer.Write([]byte("you don't have any passwords yet\n"))
 
-				return nil
+				return err
 			}
 
 			writer := bufio.NewWriter(cmd.Writer)
 
 			for _, password := range passwords {
-				writer.WriteString(password.Name + "\n")
+				_, err = writer.WriteString(password.Name + "\n")
+				if err != nil {
+					return err
+				}
 			}
 
 			writer.Flush()
@@ -80,9 +83,9 @@ func (p *PasswordsCommands) Show() *cli.Command {
 				return err
 			}
 
-			cmd.Writer.Write([]byte(rawPassword + "\n"))
+			_, err = cmd.Writer.Write([]byte(rawPassword + "\n"))
 
-			return nil
+			return err
 		},
 	}
 }
@@ -181,6 +184,7 @@ func (p *PasswordsCommands) parsePasswordEditText(
 	}
 
 	rawPassword = strings.TrimSpace(parts[0])
+
 	if len(parts) > 1 {
 		meta = strings.TrimSpace(parts[1])
 	}

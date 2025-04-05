@@ -6,9 +6,11 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
+	"errors"
 	"io"
 )
+
+var ErrShortCiphertext = errors.New("ciphertext too short")
 
 type Key struct {
 	hash []byte
@@ -65,7 +67,7 @@ func (key *Key) Decrypt(ciphertext string) (string, error) {
 
 	nonceSize := gcm.NonceSize()
 	if len(cipherData) < nonceSize {
-		return "", fmt.Errorf("ciphertext too short")
+		return "", ErrShortCiphertext
 	}
 
 	nonce, cipherData := cipherData[:nonceSize], cipherData[nonceSize:]

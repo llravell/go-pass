@@ -31,11 +31,12 @@ func NewAuthServer(
 }
 
 func (s *AuthServer) Register(ctx context.Context, in *pb.AuthRequest) (*pb.AuthResponse, error) {
-	user, err := s.authUC.RegisterUser(ctx, in.Login, in.Password)
+	user, err := s.authUC.RegisterUser(ctx, in.GetLogin(), in.GetPassword())
 
 	if err != nil && errors.Is(err, entity.ErrUserConflict) {
 		return nil, status.Error(codes.AlreadyExists, "user already exists")
 	}
+
 	if err != nil {
 		s.log.Error().Err(err).Msg("user saving failed")
 
@@ -53,7 +54,7 @@ func (s *AuthServer) Register(ctx context.Context, in *pb.AuthRequest) (*pb.Auth
 }
 
 func (s *AuthServer) Login(ctx context.Context, in *pb.AuthRequest) (*pb.AuthResponse, error) {
-	user, err := s.authUC.VerifyUser(ctx, in.Login, in.Password)
+	user, err := s.authUC.VerifyUser(ctx, in.GetLogin(), in.GetPassword())
 	if err != nil {
 		s.log.Error().Err(err).Msg("login failed")
 

@@ -28,7 +28,6 @@ func (repo *PasswordsPostgresRepository) AddNewPassword(
 		VALUES
 			($1, $2, $3, $4, $5);
 	`, password.Name, password.Value, password.Meta, password.Version, userID)
-
 	if err != nil {
 		return err
 	}

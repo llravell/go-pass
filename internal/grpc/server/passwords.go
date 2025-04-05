@@ -50,7 +50,9 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.SyncRe
 		}, nil
 	}
 
-	if diffErr, ok := err.(*usecase.PasswordDiffConflictError); ok {
+	var diffErr *usecase.PasswordDiffConflictError
+
+	if errors.As(err, &diffErr) {
 		return &pb.SyncResponse{
 			Success: false,
 			Conflict: &pb.Conflict{

@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/llravell/go-pass/internal/entity"
 	"google.golang.org/grpc"
@@ -37,7 +36,7 @@ func AuthClientInterceptor(
 			return invoker(ctx, method, req, reply, cc, opts...)
 		}
 
-		authorize := fmt.Sprintf("bearer %s", session.AuthToken)
+		authorize := "bearer " + session.AuthToken
 		ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(headerAuthorize, authorize))
 
 		return invoker(ctx, method, req, reply, cc, opts...)

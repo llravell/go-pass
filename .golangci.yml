@@ -1,41 +1,59 @@
+version: "2"
 linters:
-  enable-all: true
+  default: all
   disable:
-    - gomnd
-    - execinquery
-    - exportloopref
-    - gochecknoglobals
-    - reassign
-    - exhaustruct
-    - tagliatelle
-    - wrapcheck
-    - testpackage
-    - paralleltest
-    - ireturn
-    - testifylint
     - err113
-
-linters-settings:
-  depguard:
-    rules:
-      prevent_unmaintained_packages:
-        list-mode: lax
-        files:
-          - $all
-          - "!$test"
-        allow:
-          - $gostd
-
-  varnamelen:
-    min-name-length: 2
-    ignore-decls:
-      - w http.ResponseWriter
-      - r *http.Request
-      - r chi.Router
-
-  godot:
-    period: false
-
-  mnd:
-    ignored-files:
-      - '.+_psql.go'
+    - exhaustruct
+    - gochecknoglobals
+    - ireturn
+    - mnd
+    - paralleltest
+    - reassign
+    - tagliatelle
+    - testifylint
+    - testpackage
+    - wrapcheck
+  settings:
+    depguard:
+      rules:
+        prevent_unmaintained_packages:
+          list-mode: lax
+          files:
+            - $all
+            - '!$test'
+          allow:
+            - $gostd
+    godot:
+      period: false
+    mnd:
+      ignored-files:
+        - .+_psql.go
+    varnamelen:
+      min-name-length: 2
+      ignore-decls:
+        - w http.ResponseWriter
+        - r *http.Request
+        - r chi.Router
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

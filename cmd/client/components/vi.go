@@ -18,6 +18,7 @@ func EditViaVI(text string) (string, error) {
 		return "", err
 	}
 
+	//nolint:gosec
 	vi := exec.Command("vi", tmpFile.Name())
 	vi.Stdin = os.Stdin
 	vi.Stdout = os.Stdout

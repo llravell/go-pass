@@ -19,7 +19,7 @@ func (pass *Password) ToPB() *pb.Password {
 		Name:    pass.Name,
 		Value:   pass.Value,
 		Meta:    pass.Meta,
-		Version: int32(pass.Version),
+		Version: int32(pass.Version), //nolint:gosec
 	}
 }
 

@@ -16,7 +16,12 @@ type (
 	}
 
 	PasswordsRepository interface {
-		UpdateByName(ctx context.Context, userID int, name string, updateFn func(password *entity.Password) (*entity.Password, error)) error
+		UpdateByName(
+			ctx context.Context,
+			userID int,
+			name string,
+			updateFn func(password *entity.Password) (*entity.Password, error),
+		) error
 		AddNewPassword(ctx context.Context, userID int, password *entity.Password) error
 	}
 

@@ -45,22 +45,26 @@ func (uc *PasswordsUseCase) SyncPassword(
 	userID int,
 	password *entity.Password,
 ) error {
-	err := uc.repo.UpdateByName(ctx, userID, password.Name, func(targetPassword *entity.Password) (*entity.Password, error) {
-		if targetPassword.Deleted {
-			if password.Version > targetPassword.Version {
-				return password, nil
-			} else {
+	err := uc.repo.UpdateByName(
+		ctx,
+		userID,
+		password.Name,
+		func(targetPassword *entity.Password) (*entity.Password, error) {
+			if targetPassword.Deleted {
+				if password.Version > targetPassword.Version {
+					return password, nil
+				}
+
 				return nil, ErrPasswordDeleteConflict
 			}
-		}
 
-		if password.Version > targetPassword.Version {
-			return password, nil
-		}
+			if password.Version > targetPassword.Version {
+				return password, nil
+			}
 
-		return nil, &PasswordDiffConflictError{password: targetPassword}
-	})
-
+			return nil, &PasswordDiffConflictError{password: targetPassword}
+		},
+	)
 	if err != nil {
 		if !errors.Is(err, entity.ErrPasswordDoesNotExist) {
 			return err

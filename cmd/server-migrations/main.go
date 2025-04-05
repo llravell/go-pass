@@ -55,6 +55,6 @@ func main() {
 
 	err = runMigrations(db)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 }

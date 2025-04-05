@@ -35,7 +35,7 @@ func (auth *AuthUseCase) Register(
 		return err
 	}
 
-	return auth.saveUserSession(ctx, login, password, resp.Token)
+	return auth.saveUserSession(ctx, login, password, resp.GetToken())
 }
 
 func (auth *AuthUseCase) Login(
@@ -50,7 +50,7 @@ func (auth *AuthUseCase) Login(
 		return err
 	}
 
-	return auth.saveUserSession(ctx, login, password, resp.Token)
+	return auth.saveUserSession(ctx, login, password, resp.GetToken())
 }
 
 func (auth *AuthUseCase) ValidateMasterPassword(
