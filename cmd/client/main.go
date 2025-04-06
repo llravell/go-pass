@@ -10,6 +10,7 @@ import (
 
 	"github.com/llravell/go-pass/cmd/client/commands"
 	"github.com/llravell/go-pass/cmd/client/components"
+	"github.com/llravell/go-pass/internal/grpc/client"
 	"github.com/llravell/go-pass/internal/repository"
 	usecase "github.com/llravell/go-pass/internal/usecase/client"
 	pb "github.com/llravell/go-pass/pkg/grpc"
@@ -64,17 +65,23 @@ func initStorage() (*sql.DB, error) {
 }
 
 func buildCmd(db *sql.DB) *cli.Command {
-	conn, err := grpc.NewClient(":3200", grpc.WithTransportCredentials(insecure.NewCredentials()))
+	sessionRepo := repository.NewSessionSqliteRepository(db)
+	passwordsRepo := repository.NewPasswordsSqliteRepository(db)
+
+	conn, err := grpc.NewClient(
+		":3200",
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(client.AuthInterceptor(sessionRepo)),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sessionRepo := repository.NewSessionSqliteRepository(db)
-	passwordsRepo := repository.NewPasswordsSqliteRepository(db)
 	authClient := pb.NewAuthClient(conn)
+	passwordsClient := pb.NewPasswordsClient(conn)
 
 	authUseCase := usecase.NewAuthUseCase(sessionRepo, authClient)
-	passwordsUseCase := usecase.NewPasswordsUseCase(passwordsRepo)
+	passwordsUseCase := usecase.NewPasswordsUseCase(passwordsRepo, passwordsClient)
 
 	encryptionKeyProvider := components.NewEncryptionKeyProvider(authUseCase)
 	authCommands := commands.NewAuthCommands(authUseCase)

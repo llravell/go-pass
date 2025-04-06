@@ -43,6 +43,13 @@ func (repo *SessionSqliteRepository) GetSession(
 		return nil, err
 	}
 
+	authTokenRow := repo.conn.QueryRowContext(ctx, "SELECT value FROM session WHERE key=?", authTokenKey)
+
+	err = authTokenRow.Scan(&session.AuthToken)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
 	return &session, nil
 }
 

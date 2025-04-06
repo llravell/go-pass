@@ -53,5 +53,7 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.SyncRe
 		}, nil
 	}
 
+	s.log.Error().Err(err).Msg("sync failed")
+
 	return nil, status.Error(codes.Unknown, "sync failed")
 }

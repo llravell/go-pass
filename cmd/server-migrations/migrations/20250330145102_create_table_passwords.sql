@@ -7,6 +7,7 @@ CREATE TABLE passwords (
   meta TEXT,
   version INTEGER DEFAULT 0,
   user_id INTEGER NOT NULL,
+  is_deleted boolean DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
   UNIQUE (user_id, name),
   CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id)

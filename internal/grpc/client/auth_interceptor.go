@@ -16,7 +16,7 @@ type SessionRepository interface {
 	GetSession(ctx context.Context) (*entity.ClientSession, error)
 }
 
-func AuthClientInterceptor(
+func AuthInterceptor(
 	sessionRepo SessionRepository,
 ) grpc.UnaryClientInterceptor {
 	return func(

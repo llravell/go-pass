@@ -14,9 +14,11 @@ type PasswordsUseCase struct {
 
 func NewPasswordsUseCase(
 	passwordsRepo PasswordsRepository,
+	passwordsClient pb.PasswordsClient,
 ) *PasswordsUseCase {
 	return &PasswordsUseCase{
-		passwordsRepo: passwordsRepo,
+		passwordsRepo:   passwordsRepo,
+		passwordsClient: passwordsClient,
 	}
 }
 

@@ -47,7 +47,7 @@ func (repo *PasswordsPostgresRepository) UpdateByName(
 		row := tx.QueryRowContext(ctx, `
 			SELECT name, encrypted_pass, meta, version, is_deleted
 			FROM passwords
-			WHERE user_id=$1 name=$2
+			WHERE user_id=$1 AND name=$2
 			FOR UPDATE;
 		`, userID, name)
 
@@ -72,8 +72,8 @@ func (repo *PasswordsPostgresRepository) UpdateByName(
 		_, err = tx.ExecContext(ctx, `
 			UPDATE passwords
 			SET encrypted_pass=$1, meta=$2, version=$3, is_deleted=$4
-			WHERE user_id=$5 name=$6;
-		`, pass.Value, pass.Meta, pass.Version, pass.Deleted, userID, pass.Name)
+			WHERE user_id=$5 AND name=$6;
+		`, updatedPass.Value, updatedPass.Meta, updatedPass.Version, updatedPass.Deleted, userID, pass.Name)
 		if err != nil {
 			return err
 		}
