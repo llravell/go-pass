@@ -41,23 +41,14 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.SyncRe
 		return &pb.SyncResponse{Success: true}, nil
 	}
 
-	if errors.Is(err, usecase.ErrPasswordDeleteConflict) {
+	var conflictErr *entity.PasswordConflictError
+
+	if errors.As(err, &conflictErr) {
 		return &pb.SyncResponse{
 			Success: false,
 			Conflict: &pb.Conflict{
-				Type: pb.ConflictType_DELETED,
-			},
-		}, nil
-	}
-
-	var diffErr *usecase.PasswordDiffConflictError
-
-	if errors.As(err, &diffErr) {
-		return &pb.SyncResponse{
-			Success: false,
-			Conflict: &pb.Conflict{
-				Type:     pb.ConflictType_DIFF,
-				Password: diffErr.GetConflictedPassword().ToPB(),
+				Password: conflictErr.Password().ToPB(),
+				Type:     conflictErr.TypePB(),
 			},
 		}, nil
 	}

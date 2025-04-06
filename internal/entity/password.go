@@ -1,6 +1,9 @@
 package entity
 
-import pb "github.com/llravell/go-pass/pkg/grpc"
+import (
+	"github.com/llravell/go-pass/pkg/encryption"
+	pb "github.com/llravell/go-pass/pkg/grpc"
+)
 
 type Password struct {
 	Name    string
@@ -12,6 +15,28 @@ type Password struct {
 
 func (pass *Password) BumpVersion() {
 	pass.Version++
+}
+
+func (pass *Password) Open(key *encryption.Key) error {
+	decryptedValue, err := key.Decrypt(pass.Value)
+	if err != nil {
+		return err
+	}
+
+	pass.Value = decryptedValue
+
+	return nil
+}
+
+func (pass *Password) Close(key *encryption.Key) error {
+	encryptedValue, err := key.Encrypt(pass.Value)
+	if err != nil {
+		return err
+	}
+
+	pass.Value = encryptedValue
+
+	return nil
 }
 
 func (pass *Password) ToPB() *pb.Password {

@@ -3,24 +3,9 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/llravell/go-pass/internal/entity"
 )
-
-var ErrPasswordDeleteConflict = errors.New("password has been deleted")
-
-type PasswordDiffConflictError struct {
-	password *entity.Password
-}
-
-func (e *PasswordDiffConflictError) GetConflictedPassword() *entity.Password {
-	return e.password
-}
-
-func (e *PasswordDiffConflictError) Error() string {
-	return fmt.Sprintf("conflicted with %d version", e.password.Version)
-}
 
 type PasswordsUseCase struct {
 	repo PasswordsRepository
@@ -49,20 +34,20 @@ func (uc *PasswordsUseCase) SyncPassword(
 		ctx,
 		userID,
 		password.Name,
-		func(targetPassword *entity.Password) (*entity.Password, error) {
-			if targetPassword.Deleted {
-				if password.Version > targetPassword.Version {
+		func(basePassword *entity.Password) (*entity.Password, error) {
+			if basePassword.Deleted {
+				if password.Version > basePassword.Version {
 					return password, nil
 				}
 
-				return nil, ErrPasswordDeleteConflict
+				return nil, entity.NewPasswordDeletedConflictError(basePassword)
 			}
 
-			if password.Version > targetPassword.Version {
+			if password.Version > basePassword.Version {
 				return password, nil
 			}
 
-			return nil, &PasswordDiffConflictError{password: targetPassword}
+			return nil, entity.NewPasswordDiffConflictError(basePassword)
 		},
 	)
 	if err != nil {

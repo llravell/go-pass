@@ -4,27 +4,27 @@ import (
 	"context"
 
 	"github.com/llravell/go-pass/internal/entity"
-	"github.com/llravell/go-pass/pkg/encryption"
+	pb "github.com/llravell/go-pass/pkg/grpc"
 )
 
 type PasswordsUseCase struct {
-	passwordRepo PasswordRepository
+	passwordsRepo   PasswordsRepository
+	passwordsClient pb.PasswordsClient
 }
 
 func NewPasswordsUseCase(
-	passwordRepo PasswordRepository,
+	passwordsRepo PasswordsRepository,
 ) *PasswordsUseCase {
 	return &PasswordsUseCase{
-		passwordRepo: passwordRepo,
+		passwordsRepo: passwordsRepo,
 	}
 }
 
 func (p *PasswordsUseCase) AddNewPassword(
 	ctx context.Context,
-	key *encryption.Key,
-	name, password, meta string,
+	password entity.Password,
 ) error {
-	exists, err := p.passwordRepo.PasswordExists(ctx, name)
+	exists, err := p.passwordsRepo.PasswordExists(ctx, password.Name)
 	if err != nil {
 		return err
 	}
@@ -33,40 +33,45 @@ func (p *PasswordsUseCase) AddNewPassword(
 		return entity.ErrPasswordAlreadyExist
 	}
 
-	encryptedPass, err := key.Encrypt(password)
+	password.Version = 1
+
+	response, err := p.passwordsClient.Sync(ctx, password.ToPB())
 	if err != nil {
-		return err
+		return p.passwordsRepo.CreateNewPassword(ctx, &password)
 	}
 
-	err = p.passwordRepo.CreateNewPassword(ctx, &entity.Password{
-		Name:    name,
-		Value:   encryptedPass,
-		Meta:    meta,
-		Version: 1,
-	})
-	if err != nil {
-		return err
+	if response.GetSuccess() {
+		return p.passwordsRepo.CreateNewPassword(ctx, &password)
 	}
 
-	return nil
+	return entity.NewPasswordConflictErrorFromPB(response.GetConflict())
 }
 
 func (p *PasswordsUseCase) GetPasswordByName(
 	ctx context.Context,
 	name string,
 ) (*entity.Password, error) {
-	return p.passwordRepo.GetPasswordByName(ctx, name)
+	return p.passwordsRepo.GetPasswordByName(ctx, name)
 }
 
 func (p *PasswordsUseCase) UpdatePassword(
 	ctx context.Context,
 	password *entity.Password,
 ) error {
-	return p.passwordRepo.UpdatePassword(ctx, password)
+	response, err := p.passwordsClient.Sync(ctx, password.ToPB())
+	if err != nil {
+		return p.passwordsRepo.UpdatePassword(ctx, password)
+	}
+
+	if response.GetSuccess() {
+		return p.passwordsRepo.UpdatePassword(ctx, password)
+	}
+
+	return entity.NewPasswordConflictErrorFromPB(response.GetConflict())
 }
 
 func (p *PasswordsUseCase) GetList(
 	ctx context.Context,
 ) ([]*entity.Password, error) {
-	return p.passwordRepo.GetPasswords(ctx)
+	return p.passwordsRepo.GetPasswords(ctx)
 }

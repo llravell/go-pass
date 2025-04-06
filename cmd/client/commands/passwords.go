@@ -3,15 +3,17 @@ package commands
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/llravell/go-pass/cmd/client/components"
 	"github.com/llravell/go-pass/internal/entity"
 	usecase "github.com/llravell/go-pass/internal/usecase/client"
-	"github.com/llravell/go-pass/pkg/encryption"
 	"github.com/urfave/cli/v3"
 )
+
+var ErrUnexpectedConflictType = errors.New("got unexpected conflict type")
 
 type PasswordsCommands struct {
 	passwordsUC *usecase.PasswordsUseCase
@@ -78,12 +80,11 @@ func (p *PasswordsCommands) Show() *cli.Command {
 				return err
 			}
 
-			rawPassword, err := key.Decrypt(pass.Value)
-			if err != nil {
+			if err = pass.Open(key); err != nil {
 				return err
 			}
 
-			_, err = cmd.Writer.Write([]byte(rawPassword + "\n"))
+			_, err = cmd.Writer.Write([]byte(pass.Value + "\n"))
 
 			return err
 		},
@@ -101,11 +102,18 @@ func (p *PasswordsCommands) Add() *cli.Command {
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			name := strings.TrimSpace(cmd.Args().Get(0))
-			password := strings.TrimSpace(cmd.Args().Get(1))
+			rawPassword := strings.TrimSpace(cmd.Args().Get(1))
 			meta := strings.TrimSpace(cmd.String("meta"))
 
-			if len(name) == 0 || len(password) == 0 {
+			if len(name) == 0 || len(rawPassword) == 0 {
 				return cli.Exit("got invalid args", 1)
+			}
+
+			password := entity.Password{
+				Name:    name,
+				Value:   rawPassword,
+				Meta:    meta,
+				Version: 1,
 			}
 
 			key, err := p.keyProvider.Get(ctx)
@@ -113,7 +121,22 @@ func (p *PasswordsCommands) Add() *cli.Command {
 				return err
 			}
 
-			return p.passwordsUC.AddNewPassword(ctx, key, name, password, meta)
+			if err = password.Close(key); err != nil {
+				return err
+			}
+
+			err = p.passwordsUC.AddNewPassword(ctx, password)
+			if err != nil {
+				var conflictErr *entity.PasswordConflictError
+
+				if errors.As(err, &conflictErr) {
+					return p.resolveConflict(ctx, &password, conflictErr)
+				}
+
+				return err
+			}
+
+			return nil
 		},
 	}
 }
@@ -137,44 +160,50 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 				return err
 			}
 
-			editText, err := p.buildPasswordEditText(pass, key)
+			if err = pass.Open(key); err != nil {
+				return err
+			}
+
+			updatedText, err := components.EditViaVI(p.buildPasswordEditText(pass))
 			if err != nil {
 				return err
 			}
 
-			updatedText, err := components.EditViaVI(editText)
-			if err != nil {
+			if err = p.parsePasswordEditText(updatedText, pass); err != nil {
 				return err
 			}
 
-			err = p.parsePasswordEditText(updatedText, pass, key)
-			if err != nil {
+			if err = pass.Close(key); err != nil {
 				return err
 			}
 
 			pass.BumpVersion()
 
-			return p.passwordsUC.UpdatePassword(ctx, pass)
+			err = p.passwordsUC.UpdatePassword(ctx, pass)
+			if err != nil {
+				var conflictErr *entity.PasswordConflictError
+
+				if errors.As(err, &conflictErr) {
+					return p.resolveConflict(ctx, pass, conflictErr)
+				}
+
+				return err
+			}
+
+			return nil
 		},
 	}
 }
 
 func (p *PasswordsCommands) buildPasswordEditText(
 	password *entity.Password,
-	key *encryption.Key,
-) (string, error) {
-	decryptedPass, err := key.Decrypt(password.Value)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%s\n%s", decryptedPass, password.Meta), nil
+) string {
+	return fmt.Sprintf("%s\n%s", password.Value, password.Meta)
 }
 
 func (p *PasswordsCommands) parsePasswordEditText(
 	text string,
 	password *entity.Password,
-	key *encryption.Key,
 ) error {
 	var rawPassword, meta string
 
@@ -189,13 +218,94 @@ func (p *PasswordsCommands) parsePasswordEditText(
 		meta = strings.TrimSpace(parts[1])
 	}
 
-	encryptedPassword, err := key.Encrypt(rawPassword)
+	password.Value = rawPassword
+	password.Meta = meta
+
+	return nil
+}
+
+func (p *PasswordsCommands) resolveConflict(
+	ctx context.Context,
+	targetPassword *entity.Password,
+	conflictErr *entity.PasswordConflictError,
+) error {
+	if conflictErr.Type() == entity.PasswordDeletedConflictType {
+		return p.resolveDeleteConflict(ctx, targetPassword, conflictErr.Password())
+	}
+
+	if conflictErr.Type() == entity.PasswordDiffConflictType {
+		return p.resolveDiffConflict(ctx, targetPassword, conflictErr.Password())
+	}
+
+	return ErrUnexpectedConflictType
+}
+
+func (p *PasswordsCommands) resolveDeleteConflict(
+	ctx context.Context,
+	password *entity.Password,
+	conflictedPassword *entity.Password,
+) error {
+	shouldRecover, err := components.BoolPrompt(`
+		This password has been deleted.\n
+		Do you wont to recover it?
+	`)
 	if err != nil {
 		return err
 	}
 
-	password.Value = encryptedPassword
-	password.Meta = meta
+	if shouldRecover {
+		password.Version = conflictedPassword.Version + 1
+
+		return p.passwordsUC.UpdatePassword(ctx, password)
+	}
+
+	// TODO: silience delete
+
+	return nil
+}
+
+func (p *PasswordsCommands) resolveDiffConflict(
+	ctx context.Context,
+	password *entity.Password,
+	conflictedPassword *entity.Password,
+) error {
+	key, err := p.keyProvider.Get(ctx)
+	if err != nil {
+		return err
+	}
+
+	if err = password.Open(key); err != nil {
+		return err
+	}
+
+	if err = conflictedPassword.Open(key); err != nil {
+		return err
+	}
+
+	shouldOverride, err := components.BoolPrompt(fmt.Sprintf(`
+		Got conflict while sync.\n
+		Server:\n
+		%s\n%s\n
+		\n----------------------\n
+		Local:\n
+		%s\n%s\n
+		\n----------------------\n
+		Do you want to override server version?
+	`,
+		conflictedPassword.Value, conflictedPassword.Meta,
+		password.Value, password.Meta,
+	))
+	if err != nil {
+		return err
+	}
+
+	if shouldOverride {
+		password.Version = conflictedPassword.Version + 1
+
+		return p.passwordsUC.UpdatePassword(ctx, password)
+	}
+
+	// TODO: local override
 
 	return nil
 }
