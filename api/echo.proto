@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package echo;
+
+option go_package = "pkg/grpc";
+
+service Echo {
+  rpc Send(Message) returns (Message);
+}
+
+message Message {
+  string text = 1;
+}
