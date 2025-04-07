@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,6 +60,9 @@ func AuthServerInterceptor(
 			return nil, status.Error(codes.Unauthenticated, "invalid auth token")
 		}
 
-		return context.WithValue(ctx, UserIDContextKey, getUserIDFromToken(token)), nil
+		userID := getUserIDFromToken(token)
+		ctx = logging.InjectFields(ctx, logging.Fields{"auth.sub", userID})
+
+		return context.WithValue(ctx, UserIDContextKey, userID), nil
 	})
 }

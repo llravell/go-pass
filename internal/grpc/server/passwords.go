@@ -32,6 +32,8 @@ func NewPasswordsServer(
 func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.SyncResponse, error) {
 	userID, ok := GetUserIDFromContext(ctx)
 	if !ok {
+		s.log.Error().Msg("getting userID from ctx failed")
+
 		return nil, status.Error(codes.Unauthenticated, "failed to resolve user id")
 	}
 
@@ -44,6 +46,10 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.SyncRe
 	var conflictErr *entity.PasswordConflictError
 
 	if errors.As(err, &conflictErr) {
+		s.log.Info().
+			Str("conflict_type", string(conflictErr.Type())).
+			Msg("sync conflict")
+
 		return &pb.SyncResponse{
 			Success: false,
 			Conflict: &pb.Conflict{

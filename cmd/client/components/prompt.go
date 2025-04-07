@@ -21,13 +21,15 @@ func isNegativeResponse(response string) bool {
 func BoolPrompt(text string) (bool, error) {
 	writer := bufio.NewWriter(os.Stdout)
 
-	_, err := writer.WriteString(text + "\n")
-	if err != nil {
+	if _, err := writer.WriteString(text + "\n"); err != nil {
 		return false, err
 	}
 
-	_, err = writer.WriteString("y/n: ")
-	if err != nil {
+	if _, err := writer.WriteString("y/n: "); err != nil {
+		return false, err
+	}
+
+	if err := writer.Flush(); err != nil {
 		return false, err
 	}
 

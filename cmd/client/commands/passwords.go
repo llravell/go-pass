@@ -15,6 +15,24 @@ import (
 
 var ErrUnexpectedConflictType = errors.New("got unexpected conflict type")
 
+var deleteConflictPromptTemplate = `
+Password "%s" has been deleted.
+Do you want to recover it?
+`
+var diffConflictPromptTemplate = `
+Got conflict while sync.
+----------------------
+Server:
+%s
+%s
+----------------------
+Local:
+%s
+%s
+----------------------
+Do you want to override server version?
+`
+
 type PasswordsCommands struct {
 	passwordsUC *usecase.PasswordsUseCase
 	keyProvider *components.EncryptionKeyProvider
@@ -245,10 +263,10 @@ func (p *PasswordsCommands) resolveDeleteConflict(
 	password *entity.Password,
 	conflictedPassword *entity.Password,
 ) error {
-	shouldRecover, err := components.BoolPrompt(`
-		This password has been deleted.\n
-		Do you wont to recover it?
-	`)
+	shouldRecover, err := components.BoolPrompt(fmt.Sprintf(
+		deleteConflictPromptTemplate,
+		password.Name,
+	))
 	if err != nil {
 		return err
 	}
@@ -282,16 +300,8 @@ func (p *PasswordsCommands) resolveDiffConflict(
 		return err
 	}
 
-	shouldOverride, err := components.BoolPrompt(fmt.Sprintf(`
-		Got conflict while sync.\n
-		Server:\n
-		%s\n%s\n
-		\n----------------------\n
-		Local:\n
-		%s\n%s\n
-		\n----------------------\n
-		Do you want to override server version?
-	`,
+	shouldOverride, err := components.BoolPrompt(fmt.Sprintf(
+		diffConflictPromptTemplate,
 		conflictedPassword.Value, conflictedPassword.Meta,
 		password.Value, password.Meta,
 	))

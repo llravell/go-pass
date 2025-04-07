@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/llravell/go-pass/config"
 	"github.com/llravell/go-pass/internal/grpc/server"
@@ -48,8 +49,14 @@ func main() {
 	authServer := server.NewAuthServer(authUsecase, &log)
 	passwordsServer := server.NewPasswordsServer(passwordsUsecase, &log)
 
+	loggingOpts := []logging.Option{
+		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
+	}
 	srv := grpc.NewServer(
-		grpc.UnaryInterceptor(server.AuthServerInterceptor(jwtManager)),
+		grpc.ChainUnaryInterceptor(
+			server.AuthServerInterceptor(jwtManager),
+			logging.UnaryServerInterceptor(server.Logger(&log), loggingOpts...),
+		),
 	)
 	pb.RegisterAuthServer(srv, authServer)
 	pb.RegisterPasswordsServer(srv, passwordsServer)
