@@ -23,6 +23,7 @@ type (
 			updateFn func(password *entity.Password) (*entity.Password, error),
 		) error
 		AddNewPassword(ctx context.Context, userID int, password *entity.Password) error
+		DeletePasswordByName(ctx context.Context, userID int, name string) error
 	}
 
 	JWTIssuer interface {

@@ -19,14 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Passwords_Sync_FullMethodName = "/passwords.Passwords/Sync"
+	Passwords_Sync_FullMethodName   = "/passwords.Passwords/Sync"
+	Passwords_Delete_FullMethodName = "/passwords.Passwords/Delete"
 )
 
 // PasswordsClient is the client API for Passwords service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PasswordsClient interface {
-	Sync(ctx context.Context, in *Password, opts ...grpc.CallOption) (*SyncResponse, error)
+	Sync(ctx context.Context, in *Password, opts ...grpc.CallOption) (*PasswordSyncResponse, error)
+	Delete(ctx context.Context, in *PasswordDeleteRequest, opts ...grpc.CallOption) (*PasswordDeleteResponse, error)
 }
 
 type passwordsClient struct {
@@ -37,10 +39,20 @@ func NewPasswordsClient(cc grpc.ClientConnInterface) PasswordsClient {
 	return &passwordsClient{cc}
 }
 
-func (c *passwordsClient) Sync(ctx context.Context, in *Password, opts ...grpc.CallOption) (*SyncResponse, error) {
+func (c *passwordsClient) Sync(ctx context.Context, in *Password, opts ...grpc.CallOption) (*PasswordSyncResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SyncResponse)
+	out := new(PasswordSyncResponse)
 	err := c.cc.Invoke(ctx, Passwords_Sync_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *passwordsClient) Delete(ctx context.Context, in *PasswordDeleteRequest, opts ...grpc.CallOption) (*PasswordDeleteResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PasswordDeleteResponse)
+	err := c.cc.Invoke(ctx, Passwords_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +63,8 @@ func (c *passwordsClient) Sync(ctx context.Context, in *Password, opts ...grpc.C
 // All implementations must embed UnimplementedPasswordsServer
 // for forward compatibility.
 type PasswordsServer interface {
-	Sync(context.Context, *Password) (*SyncResponse, error)
+	Sync(context.Context, *Password) (*PasswordSyncResponse, error)
+	Delete(context.Context, *PasswordDeleteRequest) (*PasswordDeleteResponse, error)
 	mustEmbedUnimplementedPasswordsServer()
 }
 
@@ -62,8 +75,11 @@ type PasswordsServer interface {
 // pointer dereference when methods are called.
 type UnimplementedPasswordsServer struct{}
 
-func (UnimplementedPasswordsServer) Sync(context.Context, *Password) (*SyncResponse, error) {
+func (UnimplementedPasswordsServer) Sync(context.Context, *Password) (*PasswordSyncResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sync not implemented")
+}
+func (UnimplementedPasswordsServer) Delete(context.Context, *PasswordDeleteRequest) (*PasswordDeleteResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedPasswordsServer) mustEmbedUnimplementedPasswordsServer() {}
 func (UnimplementedPasswordsServer) testEmbeddedByValue()                   {}
@@ -104,6 +120,24 @@ func _Passwords_Sync_Handler(srv interface{}, ctx context.Context, dec func(inte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Passwords_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PasswordDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PasswordsServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Passwords_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PasswordsServer).Delete(ctx, req.(*PasswordDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Passwords_ServiceDesc is the grpc.ServiceDesc for Passwords service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -114,6 +148,10 @@ var Passwords_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Sync",
 			Handler:    _Passwords_Sync_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _Passwords_Delete_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

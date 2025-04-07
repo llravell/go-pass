@@ -25,6 +25,14 @@ func (uc *PasswordsUseCase) AddNewPassword(
 	return uc.repo.AddNewPassword(ctx, userID, password)
 }
 
+func (uc *PasswordsUseCase) DeletePasswordByName(
+	ctx context.Context,
+	userID int,
+	name string,
+) error {
+	return uc.repo.DeletePasswordByName(ctx, userID, name)
+}
+
 func (uc *PasswordsUseCase) SyncPassword(
 	ctx context.Context,
 	userID int,

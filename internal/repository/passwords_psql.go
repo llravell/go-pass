@@ -35,6 +35,23 @@ func (repo *PasswordsPostgresRepository) AddNewPassword(
 	return nil
 }
 
+func (repo *PasswordsPostgresRepository) DeletePasswordByName(
+	ctx context.Context,
+	userID int,
+	name string,
+) error {
+	_, err := repo.conn.ExecContext(ctx, `
+		UPDATE passwords
+		SET is_deleted=TRUE
+		WHERE user_id=$1 AND name=$2;
+	`, userID, name)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (repo *PasswordsPostgresRepository) UpdateByName(
 	ctx context.Context,
 	userID int,
