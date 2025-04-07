@@ -213,6 +213,20 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 	}
 }
 
+func (p *PasswordsCommands) Delete() *cli.Command {
+	return &cli.Command{
+		Name: "delete",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			name := strings.TrimSpace(cmd.Args().Get(0))
+			if len(name) == 0 {
+				return cli.Exit("got empty name", 1)
+			}
+
+			return p.passwordsUC.DeletePasswordByName(ctx, name)
+		},
+	}
+}
+
 func (p *PasswordsCommands) buildPasswordEditText(
 	password *entity.Password,
 ) string {
@@ -277,7 +291,7 @@ func (p *PasswordsCommands) resolveDeleteConflict(
 		return p.passwordsUC.UpdatePassword(ctx, password)
 	}
 
-	return p.passwordsUC.DeletePasswordLocal(ctx, password)
+	return p.passwordsUC.DeletePasswordLocal(ctx, password.Name)
 }
 
 func (p *PasswordsCommands) resolveDiffConflict(

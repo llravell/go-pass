@@ -87,7 +87,28 @@ func (p *PasswordsUseCase) GetList(
 
 func (p *PasswordsUseCase) DeletePasswordLocal(
 	ctx context.Context,
-	password *entity.Password,
+	name string,
 ) error {
-	return p.passwordsRepo.DeletePasswordHard(ctx, password)
+	return p.passwordsRepo.DeletePasswordHard(ctx, name)
+}
+
+func (p *PasswordsUseCase) DeletePasswordByName(
+	ctx context.Context,
+	name string,
+) error {
+	exists, err := p.passwordsRepo.PasswordExists(ctx, name)
+	if err != nil {
+		return err
+	}
+
+	if !exists {
+		return entity.ErrPasswordDoesNotExist
+	}
+
+	_, err = p.passwordsClient.Delete(ctx, &pb.PasswordDeleteRequest{Name: name})
+	if err != nil {
+		return p.passwordsRepo.DeletePasswordSoft(ctx, name)
+	}
+
+	return p.passwordsRepo.DeletePasswordHard(ctx, name)
 }

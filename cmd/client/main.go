@@ -106,6 +106,7 @@ func buildCmd(db *sql.DB) *cli.Command {
 					passwordsCommands.Show(),
 					passwordsCommands.Add(),
 					passwordsCommands.Edit(),
+					passwordsCommands.Delete(),
 				},
 			},
 		},
