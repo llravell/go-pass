@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type PasswordsServer struct {
@@ -64,7 +65,7 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.Passwo
 	return nil, status.Error(codes.Unknown, "sync failed")
 }
 
-func (s *PasswordsServer) Delete(ctx context.Context, in *pb.PasswordDeleteRequest) (*pb.PasswordDeleteResponse, error) {
+func (s *PasswordsServer) Delete(ctx context.Context, in *pb.PasswordDeleteRequest) (*emptypb.Empty, error) {
 	userID, ok := GetUserIDFromContext(ctx)
 	if !ok {
 		s.log.Error().Msg("getting userID from ctx failed")
@@ -79,5 +80,31 @@ func (s *PasswordsServer) Delete(ctx context.Context, in *pb.PasswordDeleteReque
 		return nil, status.Error(codes.Unknown, "deleting failed")
 	}
 
-	return &pb.PasswordDeleteResponse{}, nil
+	return &emptypb.Empty{}, nil
+}
+
+func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.PasswordGetListResponse, error) {
+	userID, ok := GetUserIDFromContext(ctx)
+	if !ok {
+		s.log.Error().Msg("getting userID from ctx failed")
+
+		return nil, status.Error(codes.Unauthenticated, "failed to resolve user id")
+	}
+
+	passwords, err := s.passwordsUC.GetList(ctx, userID)
+	if err != nil {
+		s.log.Error().Err(err).Msg("password deleting failed")
+
+		return nil, status.Error(codes.Unknown, "deleting failed")
+	}
+
+	response := &pb.PasswordGetListResponse{
+		Passwords: make([]*pb.Password, 0, len(passwords)),
+	}
+
+	for _, password := range passwords {
+		response.Passwords = append(response.Passwords, password.ToPB())
+	}
+
+	return response, nil
 }

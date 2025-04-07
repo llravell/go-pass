@@ -18,6 +18,45 @@ func NewPasswordsPostgresRepository(conn *sql.DB) *PasswordsPostgresRepository {
 	}
 }
 
+func (repo *PasswordsPostgresRepository) GetPasswords(
+	ctx context.Context,
+	userID int,
+) ([]*entity.Password, error) {
+	passwords := make([]*entity.Password, 0)
+
+	rows, err := repo.conn.QueryContext(ctx, `
+		SELECT name, encrypted_pass, meta, version
+		FROM passwords
+		WHERE user_id=$1 AND NOT is_deleted;
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var password entity.Password
+
+		err = rows.Scan(&password.Name, &password.Value, &password.Meta, &password.Version)
+		if err != nil {
+			return nil, err
+		}
+
+		passwords = append(passwords, &password)
+	}
+
+	if err = rows.Err(); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return passwords, nil
+		}
+
+		return nil, err
+	}
+
+	return passwords, nil
+}
+
 func (repo *PasswordsPostgresRepository) AddNewPassword(
 	ctx context.Context,
 	userID int,

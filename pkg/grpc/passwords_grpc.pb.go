@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,8 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Passwords_Sync_FullMethodName   = "/passwords.Passwords/Sync"
-	Passwords_Delete_FullMethodName = "/passwords.Passwords/Delete"
+	Passwords_Sync_FullMethodName    = "/passwords.Passwords/Sync"
+	Passwords_Delete_FullMethodName  = "/passwords.Passwords/Delete"
+	Passwords_GetList_FullMethodName = "/passwords.Passwords/GetList"
 )
 
 // PasswordsClient is the client API for Passwords service.
@@ -28,7 +30,8 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type PasswordsClient interface {
 	Sync(ctx context.Context, in *Password, opts ...grpc.CallOption) (*PasswordSyncResponse, error)
-	Delete(ctx context.Context, in *PasswordDeleteRequest, opts ...grpc.CallOption) (*PasswordDeleteResponse, error)
+	Delete(ctx context.Context, in *PasswordDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PasswordGetListResponse, error)
 }
 
 type passwordsClient struct {
@@ -49,10 +52,20 @@ func (c *passwordsClient) Sync(ctx context.Context, in *Password, opts ...grpc.C
 	return out, nil
 }
 
-func (c *passwordsClient) Delete(ctx context.Context, in *PasswordDeleteRequest, opts ...grpc.CallOption) (*PasswordDeleteResponse, error) {
+func (c *passwordsClient) Delete(ctx context.Context, in *PasswordDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(PasswordDeleteResponse)
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, Passwords_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *passwordsClient) GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*PasswordGetListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(PasswordGetListResponse)
+	err := c.cc.Invoke(ctx, Passwords_GetList_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +77,8 @@ func (c *passwordsClient) Delete(ctx context.Context, in *PasswordDeleteRequest,
 // for forward compatibility.
 type PasswordsServer interface {
 	Sync(context.Context, *Password) (*PasswordSyncResponse, error)
-	Delete(context.Context, *PasswordDeleteRequest) (*PasswordDeleteResponse, error)
+	Delete(context.Context, *PasswordDeleteRequest) (*emptypb.Empty, error)
+	GetList(context.Context, *emptypb.Empty) (*PasswordGetListResponse, error)
 	mustEmbedUnimplementedPasswordsServer()
 }
 
@@ -78,8 +92,11 @@ type UnimplementedPasswordsServer struct{}
 func (UnimplementedPasswordsServer) Sync(context.Context, *Password) (*PasswordSyncResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Sync not implemented")
 }
-func (UnimplementedPasswordsServer) Delete(context.Context, *PasswordDeleteRequest) (*PasswordDeleteResponse, error) {
+func (UnimplementedPasswordsServer) Delete(context.Context, *PasswordDeleteRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
+}
+func (UnimplementedPasswordsServer) GetList(context.Context, *emptypb.Empty) (*PasswordGetListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetList not implemented")
 }
 func (UnimplementedPasswordsServer) mustEmbedUnimplementedPasswordsServer() {}
 func (UnimplementedPasswordsServer) testEmbeddedByValue()                   {}
@@ -138,6 +155,24 @@ func _Passwords_Delete_Handler(srv interface{}, ctx context.Context, dec func(in
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Passwords_GetList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PasswordsServer).GetList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Passwords_GetList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PasswordsServer).GetList(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Passwords_ServiceDesc is the grpc.ServiceDesc for Passwords service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -152,6 +187,10 @@ var Passwords_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Delete",
 			Handler:    _Passwords_Delete_Handler,
+		},
+		{
+			MethodName: "GetList",
+			Handler:    _Passwords_GetList_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

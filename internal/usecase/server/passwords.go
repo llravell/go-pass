@@ -33,6 +33,13 @@ func (uc *PasswordsUseCase) DeletePasswordByName(
 	return uc.repo.DeletePasswordByName(ctx, userID, name)
 }
 
+func (uc *PasswordsUseCase) GetList(
+	ctx context.Context,
+	userID int,
+) ([]*entity.Password, error) {
+	return uc.repo.GetPasswords(ctx, userID)
+}
+
 func (uc *PasswordsUseCase) SyncPassword(
 	ctx context.Context,
 	userID int,

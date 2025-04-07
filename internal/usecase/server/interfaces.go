@@ -24,6 +24,7 @@ type (
 		) error
 		AddNewPassword(ctx context.Context, userID int, password *entity.Password) error
 		DeletePasswordByName(ctx context.Context, userID int, name string) error
+		GetPasswords(ctx context.Context, userID int) ([]*entity.Password, error)
 	}
 
 	JWTIssuer interface {
