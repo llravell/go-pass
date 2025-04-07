@@ -1,7 +1,6 @@
 package server_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -25,7 +24,7 @@ func TestAuthInterceptor(t *testing.T) {
 	defer closeFn()
 
 	t.Run("interceptor reject request without auth header", func(t *testing.T) {
-		_, err := client.Send(context.Background(), &pb.Message{})
+		_, err := client.Send(t.Context(), &pb.Message{})
 
 		st, ok := status.FromError(err)
 		require.True(t, ok)
@@ -38,9 +37,10 @@ func TestAuthInterceptor(t *testing.T) {
 		require.NoError(t, err)
 
 		md := metadata.Pairs("authorization", "bearer "+token)
+
 		time.Sleep(5 * time.Millisecond)
 
-		_, err = client.Send(metadata.NewOutgoingContext(context.Background(), md), &pb.Message{})
+		_, err = client.Send(metadata.NewOutgoingContext(t.Context(), md), &pb.Message{})
 
 		st, ok := status.FromError(err)
 		require.True(t, ok)
@@ -54,7 +54,7 @@ func TestAuthInterceptor(t *testing.T) {
 
 		md := metadata.Pairs("authorization", "bearer "+token)
 
-		_, err = client.Send(metadata.NewOutgoingContext(context.Background(), md), &pb.Message{})
+		_, err = client.Send(metadata.NewOutgoingContext(t.Context(), md), &pb.Message{})
 		require.NoError(t, err)
 
 		st, ok := status.FromError(err)

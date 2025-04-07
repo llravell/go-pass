@@ -19,6 +19,7 @@ var deleteConflictPromptTemplate = `
 Password "%s" has been deleted.
 Do you want to recover it?
 `
+
 var diffConflictPromptTemplate = `
 Got conflict while sync.
 ----------------------

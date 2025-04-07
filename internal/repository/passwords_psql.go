@@ -28,7 +28,7 @@ func (repo *PasswordsPostgresRepository) GetPasswords(
 		SELECT name, encrypted_pass, meta, version
 		FROM passwords
 		WHERE user_id=$1 AND NOT is_deleted;
-	`)
+	`, userID)
 	if err != nil {
 		return nil, err
 	}

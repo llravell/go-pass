@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestLogger(t *testing.T) {
 	defer closeFn()
 
 	t.Run("interceptor writes logs", func(t *testing.T) {
-		_, err := client.Send(context.Background(), &pb.Message{})
+		_, err := client.Send(t.Context(), &pb.Message{})
 		require.NoError(t, err)
 
 		var startedCallLog, finishedCallLog map[string]string
