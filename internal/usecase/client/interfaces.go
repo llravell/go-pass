@@ -19,5 +19,6 @@ type (
 		CreateNewPassword(ctx context.Context, password *entity.Password) error
 		UpdatePassword(ctx context.Context, password *entity.Password) error
 		GetPasswords(ctx context.Context) ([]*entity.Password, error)
+		DeletePasswordHard(ctx context.Context, password *entity.Password) error
 	}
 )

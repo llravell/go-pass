@@ -134,3 +134,18 @@ func (repo *PasswordsSqliteRepository) UpdatePassword(
 
 	return nil
 }
+
+func (repo *PasswordsSqliteRepository) DeletePasswordHard(
+	ctx context.Context,
+	password *entity.Password,
+) error {
+	_, err := repo.conn.ExecContext(ctx, `
+		DELETE from passwords
+		WHERE name=?;
+	`, password.Name)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

@@ -72,8 +72,22 @@ func (p *PasswordsUseCase) UpdatePassword(
 	return entity.NewPasswordConflictErrorFromPB(response.GetConflict())
 }
 
+func (p *PasswordsUseCase) UpdatePasswordLocal(
+	ctx context.Context,
+	password *entity.Password,
+) error {
+	return p.passwordsRepo.UpdatePassword(ctx, password)
+}
+
 func (p *PasswordsUseCase) GetList(
 	ctx context.Context,
 ) ([]*entity.Password, error) {
 	return p.passwordsRepo.GetPasswords(ctx)
+}
+
+func (p *PasswordsUseCase) DeletePasswordLocal(
+	ctx context.Context,
+	password *entity.Password,
+) error {
+	return p.passwordsRepo.DeletePasswordHard(ctx, password)
 }

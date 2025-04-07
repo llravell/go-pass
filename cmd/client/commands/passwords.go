@@ -277,9 +277,7 @@ func (p *PasswordsCommands) resolveDeleteConflict(
 		return p.passwordsUC.UpdatePassword(ctx, password)
 	}
 
-	// TODO: silience delete
-
-	return nil
+	return p.passwordsUC.DeletePasswordLocal(ctx, password)
 }
 
 func (p *PasswordsCommands) resolveDiffConflict(
@@ -315,7 +313,5 @@ func (p *PasswordsCommands) resolveDiffConflict(
 		return p.passwordsUC.UpdatePassword(ctx, password)
 	}
 
-	// TODO: local override
-
-	return nil
+	return p.passwordsUC.UpdatePasswordLocal(ctx, conflictedPassword)
 }
