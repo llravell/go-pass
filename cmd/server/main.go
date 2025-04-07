@@ -54,7 +54,7 @@ func main() {
 	}
 	srv := grpc.NewServer(
 		grpc.ChainUnaryInterceptor(
-			server.AuthServerInterceptor(jwtManager),
+			server.AuthInterceptor(jwtManager),
 			logging.UnaryServerInterceptor(server.Logger(&log), loggingOpts...),
 		),
 	)

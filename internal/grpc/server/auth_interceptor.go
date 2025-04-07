@@ -46,7 +46,7 @@ func getUserIDFromToken(token *jwt.Token) int {
 	return id
 }
 
-func AuthServerInterceptor(
+func AuthInterceptor(
 	jwtParser JWTParser,
 ) grpc.UnaryServerInterceptor {
 	return auth.UnaryServerInterceptor(func(ctx context.Context) (context.Context, error) {
