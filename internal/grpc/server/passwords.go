@@ -93,9 +93,9 @@ func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.Pa
 
 	passwords, err := s.passwordsUC.GetList(ctx, userID)
 	if err != nil {
-		s.log.Error().Err(err).Msg("password deleting failed")
+		s.log.Error().Err(err).Msg("passwords fetching failed")
 
-		return nil, status.Error(codes.Unknown, "deleting failed")
+		return nil, status.Error(codes.Unknown, "passwords fetching failed")
 	}
 
 	response := &pb.PasswordGetListResponse{

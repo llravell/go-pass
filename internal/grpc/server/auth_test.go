@@ -107,10 +107,10 @@ func TestAuthServer_Register(t *testing.T) {
 			Password: "pass",
 		})
 
-		status, ok := status.FromError(err)
+		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.AlreadyExists, status.Code())
+		assert.Equal(t, codes.AlreadyExists, st.Code())
 	})
 
 	t.Run("user storing error", func(t *testing.T) {
@@ -123,10 +123,10 @@ func TestAuthServer_Register(t *testing.T) {
 			Password: "pass",
 		})
 
-		status, ok := status.FromError(err)
+		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, status.Code())
+		assert.Equal(t, codes.Unknown, st.Code())
 	})
 
 	t.Run("token issuing error", func(t *testing.T) {
@@ -143,10 +143,10 @@ func TestAuthServer_Register(t *testing.T) {
 			Password: "pass",
 		})
 
-		status, ok := status.FromError(err)
+		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, status.Code())
+		assert.Equal(t, codes.Unknown, st.Code())
 	})
 }
 
@@ -186,10 +186,10 @@ func TestAuthServer_Login(t *testing.T) {
 			Password: "pass",
 		})
 
-		status, ok := status.FromError(err)
+		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, status.Code())
+		assert.Equal(t, codes.Unknown, st.Code())
 	})
 
 	t.Run("token issuing error", func(t *testing.T) {
@@ -206,9 +206,9 @@ func TestAuthServer_Login(t *testing.T) {
 			Password: "pass",
 		})
 
-		status, ok := status.FromError(err)
+		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, status.Code())
+		assert.Equal(t, codes.Unknown, st.Code())
 	})
 }
