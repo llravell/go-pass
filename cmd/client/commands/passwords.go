@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/llravell/go-pass/cmd/client/components"
 	"github.com/llravell/go-pass/internal/entity"
@@ -149,7 +150,7 @@ func (p *PasswordsCommands) Add() *cli.Command {
 				var conflictErr *entity.PasswordConflictError
 
 				if errors.As(err, &conflictErr) {
-					return p.resolveConflict(ctx, &password, conflictErr)
+					return p.resolveConflict(ctx, conflictErr)
 				}
 
 				return err
@@ -203,7 +204,7 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 				var conflictErr *entity.PasswordConflictError
 
 				if errors.As(err, &conflictErr) {
-					return p.resolveConflict(ctx, pass, conflictErr)
+					return p.resolveConflict(ctx, conflictErr)
 				}
 
 				return err
@@ -224,6 +225,55 @@ func (p *PasswordsCommands) Delete() *cli.Command {
 			}
 
 			return p.passwordsUC.DeletePasswordByName(ctx, name)
+		},
+	}
+}
+
+func (p *PasswordsCommands) Sync() *cli.Command {
+	return &cli.Command{
+		Name: "sync",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			updates, err := p.passwordsUC.GetUpdates(ctx)
+			if err != nil {
+				return err
+			}
+
+			conflicts, operationErrors := p.applySyncUpdates(ctx, updates)
+
+			for _, conflict := range conflicts {
+				err := p.resolveConflict(ctx, conflict)
+				if err != nil {
+					operationErrors = append(operationErrors, err)
+				}
+			}
+
+			w := bufio.NewWriter(cmd.Writer)
+
+			if _, err = w.WriteString(fmt.Sprintf("Added: %d\n", len(updates.ToAdd))); err != nil {
+				return nil
+			}
+
+			if _, err = w.WriteString(fmt.Sprintf("Updated: %d\n", len(updates.ToUpdate))); err != nil {
+				return nil
+			}
+
+			if _, err = w.WriteString(fmt.Sprintf("Synced: %d\n", len(updates.ToSync))); err != nil {
+				return nil
+			}
+
+			if len(operationErrors) > 0 {
+				if _, err = w.WriteString("-------------------------\n"); err != nil {
+					return err
+				}
+
+				for _, operationError := range operationErrors {
+					if _, err = w.WriteString(fmt.Sprintf("Sync error: %s", operationError.Error())); err != nil {
+						return err
+					}
+				}
+			}
+
+			return w.Flush()
 		},
 	}
 }
@@ -259,15 +309,14 @@ func (p *PasswordsCommands) parsePasswordEditText(
 
 func (p *PasswordsCommands) resolveConflict(
 	ctx context.Context,
-	targetPassword *entity.Password,
-	conflictErr *entity.PasswordConflictError,
+	conflict *entity.PasswordConflictError,
 ) error {
-	if conflictErr.Type() == entity.PasswordDeletedConflictType {
-		return p.resolveDeleteConflict(ctx, targetPassword, conflictErr.Password())
+	if conflict.Type() == entity.PasswordDeletedConflictType {
+		return p.resolveDeleteConflict(ctx, conflict)
 	}
 
-	if conflictErr.Type() == entity.PasswordDiffConflictType {
-		return p.resolveDiffConflict(ctx, targetPassword, conflictErr.Password())
+	if conflict.Type() == entity.PasswordDiffConflictType {
+		return p.resolveDiffConflict(ctx, conflict)
 	}
 
 	return ErrUnexpectedConflictType
@@ -275,58 +324,129 @@ func (p *PasswordsCommands) resolveConflict(
 
 func (p *PasswordsCommands) resolveDeleteConflict(
 	ctx context.Context,
-	password *entity.Password,
-	conflictedPassword *entity.Password,
+	conflict *entity.PasswordConflictError,
 ) error {
 	shouldRecover, err := components.BoolPrompt(fmt.Sprintf(
 		deleteConflictPromptTemplate,
-		password.Name,
+		conflict.Actual().Name,
 	))
 	if err != nil {
 		return err
 	}
 
 	if shouldRecover {
-		password.Version = conflictedPassword.Version + 1
+		conflict.Actual().Version = conflict.Incoming().Version + 1
 
-		return p.passwordsUC.UpdatePassword(ctx, password)
+		return p.passwordsUC.UpdatePassword(ctx, conflict.Actual())
 	}
 
-	return p.passwordsUC.DeletePasswordLocal(ctx, password.Name)
+	return p.passwordsUC.DeletePasswordLocal(ctx, conflict.Actual().Name)
 }
 
 func (p *PasswordsCommands) resolveDiffConflict(
 	ctx context.Context,
-	password *entity.Password,
-	conflictedPassword *entity.Password,
+	conflict *entity.PasswordConflictError,
 ) error {
 	key, err := p.keyProvider.Get(ctx)
 	if err != nil {
 		return err
 	}
 
-	if err = password.Open(key); err != nil {
+	if err = conflict.Actual().Open(key); err != nil {
 		return err
 	}
 
-	if err = conflictedPassword.Open(key); err != nil {
+	if err = conflict.Incoming().Open(key); err != nil {
 		return err
 	}
 
 	shouldOverride, err := components.BoolPrompt(fmt.Sprintf(
 		diffConflictPromptTemplate,
-		conflictedPassword.Value, conflictedPassword.Meta,
-		password.Value, password.Meta,
+		conflict.Incoming().Value, conflict.Incoming().Meta,
+		conflict.Actual().Value, conflict.Actual().Meta,
 	))
 	if err != nil {
 		return err
 	}
 
 	if shouldOverride {
-		password.Version = conflictedPassword.Version + 1
+		conflict.Actual().Version = conflict.Incoming().Version + 1
 
-		return p.passwordsUC.UpdatePassword(ctx, password)
+		return p.passwordsUC.UpdatePassword(ctx, conflict.Actual())
 	}
 
-	return p.passwordsUC.UpdatePasswordLocal(ctx, conflictedPassword)
+	return p.passwordsUC.UpdatePasswordLocal(ctx, conflict.Incoming())
+}
+
+func (p *PasswordsCommands) applySyncUpdates(
+	ctx context.Context,
+	updates *usecase.PasswordsUpdates,
+) ([]*entity.PasswordConflictError, []error) {
+	var wg sync.WaitGroup
+
+	type result struct {
+		password *entity.Password
+		err      error
+	}
+
+	operationsAmount := len(updates.ToUpdate) + len(updates.ToSync) + 1
+	operationErrors := make([]error, 0, operationsAmount)
+	conflicts := make([]*entity.PasswordConflictError, 0, len(updates.ToSync))
+	resultChan := make(chan error, operationsAmount)
+
+	if len(updates.ToAdd) > 0 {
+		wg.Add(1)
+
+		go func() {
+			defer wg.Done()
+
+			resultChan <- p.passwordsUC.AddPasswordsLocal(ctx, updates.ToAdd)
+		}()
+	}
+
+	if len(updates.ToUpdate) > 0 {
+		wg.Add(len(updates.ToUpdate))
+
+		for _, password := range updates.ToUpdate {
+			go func(password *entity.Password) {
+				defer wg.Done()
+
+				resultChan <- p.passwordsUC.UpdatePasswordLocal(ctx, password)
+			}(password)
+		}
+	}
+
+	if len(updates.ToSync) > 0 {
+		wg.Add(len(updates.ToSync))
+
+		for _, password := range updates.ToSync {
+			go func(password *entity.Password) {
+				defer wg.Done()
+
+				resultChan <- p.passwordsUC.UpdatePassword(ctx, password)
+			}(password)
+		}
+	}
+
+	go func() {
+		wg.Wait()
+
+		close(resultChan)
+	}()
+
+	for err := range resultChan {
+		if err == nil {
+			continue
+		}
+
+		var conflictErr *entity.PasswordConflictError
+
+		if errors.As(err, &conflictErr) {
+			conflicts = append(conflicts, conflictErr)
+		} else {
+			operationErrors = append(operationErrors, err)
+		}
+	}
+
+	return conflicts, operationErrors
 }

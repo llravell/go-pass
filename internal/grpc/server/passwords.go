@@ -54,7 +54,7 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.Passwo
 		return &pb.PasswordSyncResponse{
 			Success: false,
 			Conflict: &pb.Conflict{
-				Password: conflictErr.Password().ToPB(),
+				Password: conflictErr.Actual().ToPB(),
 				Type:     conflictErr.TypePB(),
 			},
 		}, nil

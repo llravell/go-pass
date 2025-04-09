@@ -49,20 +49,20 @@ func (uc *PasswordsUseCase) SyncPassword(
 		ctx,
 		userID,
 		password.Name,
-		func(basePassword *entity.Password) (*entity.Password, error) {
-			if basePassword.Deleted {
-				if password.Version > basePassword.Version {
+		func(actualPassword *entity.Password) (*entity.Password, error) {
+			if actualPassword.Deleted {
+				if password.Version > actualPassword.Version {
 					return password, nil
 				}
 
-				return nil, entity.NewPasswordDeletedConflictError(basePassword)
+				return nil, entity.NewPasswordDeletedConflictError(actualPassword, password)
 			}
 
-			if password.Version > basePassword.Version {
+			if password.Version > actualPassword.Version {
 				return password, nil
 			}
 
-			return nil, entity.NewPasswordDiffConflictError(basePassword)
+			return nil, entity.NewPasswordDiffConflictError(actualPassword, password)
 		},
 	)
 	if err != nil {

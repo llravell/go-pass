@@ -26,10 +26,11 @@ const (
 
 type PasswordConflictError struct {
 	_type    PasswordConflictType
-	password *Password
+	actual   *Password
+	incoming *Password
 }
 
-func NewPasswordConflictErrorFromPB(conflict *pb.Conflict) *PasswordConflictError {
+func NewPasswordConflictErrorFromPB(actual *Password, conflict *pb.Conflict) *PasswordConflictError {
 	var conflictType PasswordConflictType
 
 	if conflict.GetType() == pb.ConflictType_DELETED {
@@ -40,26 +41,33 @@ func NewPasswordConflictErrorFromPB(conflict *pb.Conflict) *PasswordConflictErro
 
 	return &PasswordConflictError{
 		_type:    conflictType,
-		password: NewPasswordFromPB(conflict.GetPassword()),
+		actual:   actual,
+		incoming: NewPasswordFromPB(conflict.GetPassword()),
 	}
 }
 
-func NewPasswordDiffConflictError(password *Password) *PasswordConflictError {
+func NewPasswordDiffConflictError(actual, incoming *Password) *PasswordConflictError {
 	return &PasswordConflictError{
 		_type:    PasswordDiffConflictType,
-		password: password,
+		actual:   actual,
+		incoming: incoming,
 	}
 }
 
-func NewPasswordDeletedConflictError(password *Password) *PasswordConflictError {
+func NewPasswordDeletedConflictError(actual, incoming *Password) *PasswordConflictError {
 	return &PasswordConflictError{
 		_type:    PasswordDeletedConflictType,
-		password: password,
+		actual:   actual,
+		incoming: incoming,
 	}
 }
 
-func (e *PasswordConflictError) Password() *Password {
-	return e.password
+func (e *PasswordConflictError) Actual() *Password {
+	return e.actual
+}
+
+func (e *PasswordConflictError) Incoming() *Password {
+	return e.incoming
 }
 
 func (e *PasswordConflictError) Type() PasswordConflictType {
@@ -79,5 +87,5 @@ func (e *PasswordConflictError) TypePB() pb.ConflictType {
 }
 
 func (e *PasswordConflictError) Error() string {
-	return fmt.Sprintf("conflicted with %d version", e.password.Version)
+	return fmt.Sprintf("%s conflict: actual (v%d) != incoming (v%d)", e.Type(), e.Actual().Version, e.Incoming().Version)
 }

@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/llravell/go-pass/internal/entity"
 )
@@ -112,6 +114,31 @@ func (repo *PasswordsSqliteRepository) CreateNewPassword(
 		VALUES
 			(?, ?, ?, ?);
 	`, password.Name, password.Value, password.Meta, password.Version)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repo *PasswordsSqliteRepository) CreatePasswordsMultiple(
+	ctx context.Context,
+	passwords []*entity.Password,
+) error {
+	placeholders := make([]string, 0, len(passwords))
+	args := make([]any, 0, len(passwords)*4)
+
+	for _, password := range passwords {
+		placeholders = append(placeholders, "(?, ?, ?, ?)")
+		args = append(args, password.Name, password.Value, password.Meta, password.Version)
+	}
+
+	query := fmt.Sprintf(`
+		INSERT INTO passwords (name, encrypted_pass, meta, version)
+		VALUES %s;
+	`, strings.Join(placeholders, ","))
+
+	_, err := repo.conn.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err
 	}

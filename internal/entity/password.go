@@ -39,6 +39,12 @@ func (pass *Password) Close(key *encryption.Key) error {
 	return nil
 }
 
+func (pass *Password) Equal(target *Password) bool {
+	return (pass.Name == target.Name &&
+		pass.Meta == target.Meta &&
+		pass.Version == target.Version)
+}
+
 func (pass *Password) ToPB() *pb.Password {
 	return &pb.Password{
 		Name:    pass.Name,

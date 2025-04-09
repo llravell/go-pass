@@ -17,6 +17,7 @@ type (
 		PasswordExists(ctx context.Context, name string) (bool, error)
 		GetPasswordByName(ctx context.Context, name string) (*entity.Password, error)
 		CreateNewPassword(ctx context.Context, password *entity.Password) error
+		CreatePasswordsMultiple(ctx context.Context, passwords []*entity.Password) error
 		UpdatePassword(ctx context.Context, password *entity.Password) error
 		GetPasswords(ctx context.Context) ([]*entity.Password, error)
 		DeletePasswordHard(ctx context.Context, name string) error
