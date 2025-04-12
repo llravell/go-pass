@@ -1,12 +1,13 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 )
 
-func runInTx(db *sql.DB, fn func(tx *sql.Tx) error) error {
-	tx, err := db.Begin()
+func runInTx(ctx context.Context, db *sql.DB, fn func(tx *sql.Tx) error) error {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,6 @@ import (
 
 	"github.com/llravell/go-pass/cmd/client/components"
 	"github.com/llravell/go-pass/internal/entity"
-	usecase "github.com/llravell/go-pass/internal/usecase/client"
 	"github.com/urfave/cli/v3"
 )
 
@@ -35,13 +34,25 @@ Local:
 Do you want to override server version?
 `
 
+type PasswordsUseCase interface {
+	GetList(ctx context.Context) ([]*entity.Password, error)
+	GetPasswordByName(ctx context.Context, name string) (*entity.Password, error)
+	UpdatePassword(ctx context.Context, password *entity.Password) error
+	UpdatePasswordLocal(ctx context.Context, password *entity.Password) error
+	DeletePasswordLocal(ctx context.Context, name string) error
+	AddPasswordsLocal(ctx context.Context, passwords []*entity.Password) error
+	GetUpdates(ctx context.Context) (*entity.PasswordsUpdates, error)
+	AddNewPassword(ctx context.Context, password entity.Password) error
+	DeletePasswordByName(ctx context.Context, name string) error
+}
+
 type PasswordsCommands struct {
-	passwordsUC *usecase.PasswordsUseCase
+	passwordsUC PasswordsUseCase
 	keyProvider *components.EncryptionKeyProvider
 }
 
 func NewPasswordsCommands(
-	passwordsUC *usecase.PasswordsUseCase,
+	passwordsUC PasswordsUseCase,
 	keyProvider *components.EncryptionKeyProvider,
 ) *PasswordsCommands {
 	return &PasswordsCommands{
@@ -50,11 +61,11 @@ func NewPasswordsCommands(
 	}
 }
 
-func (p *PasswordsCommands) List() *cli.Command {
+func (commands *PasswordsCommands) List() *cli.Command {
 	return &cli.Command{
 		Name: "list",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			passwords, err := p.passwordsUC.GetList(ctx)
+			passwords, err := commands.passwordsUC.GetList(ctx)
 			if err != nil {
 				return err
 			}
@@ -81,7 +92,7 @@ func (p *PasswordsCommands) List() *cli.Command {
 	}
 }
 
-func (p *PasswordsCommands) Show() *cli.Command {
+func (commands *PasswordsCommands) Show() *cli.Command {
 	return &cli.Command{
 		Name: "show",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -90,12 +101,12 @@ func (p *PasswordsCommands) Show() *cli.Command {
 				return cli.Exit("got empty name", 1)
 			}
 
-			pass, err := p.passwordsUC.GetPasswordByName(ctx, name)
+			pass, err := commands.passwordsUC.GetPasswordByName(ctx, name)
 			if err != nil {
 				return err
 			}
 
-			key, err := p.keyProvider.Get(ctx)
+			key, err := commands.keyProvider.Get(ctx)
 			if err != nil {
 				return err
 			}
@@ -111,7 +122,7 @@ func (p *PasswordsCommands) Show() *cli.Command {
 	}
 }
 
-func (p *PasswordsCommands) Add() *cli.Command {
+func (commands *PasswordsCommands) Add() *cli.Command {
 	return &cli.Command{
 		Name: "add",
 		Flags: []cli.Flag{
@@ -136,7 +147,7 @@ func (p *PasswordsCommands) Add() *cli.Command {
 				Version: 1,
 			}
 
-			key, err := p.keyProvider.Get(ctx)
+			key, err := commands.keyProvider.Get(ctx)
 			if err != nil {
 				return err
 			}
@@ -145,12 +156,12 @@ func (p *PasswordsCommands) Add() *cli.Command {
 				return err
 			}
 
-			err = p.passwordsUC.AddNewPassword(ctx, password)
+			err = commands.passwordsUC.AddNewPassword(ctx, password)
 			if err != nil {
 				var conflictErr *entity.PasswordConflictError
 
 				if errors.As(err, &conflictErr) {
-					return p.resolveConflict(ctx, conflictErr)
+					return commands.resolveConflict(ctx, conflictErr)
 				}
 
 				return err
@@ -161,7 +172,7 @@ func (p *PasswordsCommands) Add() *cli.Command {
 	}
 }
 
-func (p *PasswordsCommands) Edit() *cli.Command {
+func (commands *PasswordsCommands) Edit() *cli.Command {
 	return &cli.Command{
 		Name: "edit",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -170,12 +181,12 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 				return cli.Exit("got empty name", 1)
 			}
 
-			pass, err := p.passwordsUC.GetPasswordByName(ctx, name)
+			pass, err := commands.passwordsUC.GetPasswordByName(ctx, name)
 			if err != nil {
 				return err
 			}
 
-			key, err := p.keyProvider.Get(ctx)
+			key, err := commands.keyProvider.Get(ctx)
 			if err != nil {
 				return err
 			}
@@ -184,12 +195,12 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 				return err
 			}
 
-			updatedText, err := components.EditViaVI(p.buildPasswordEditText(pass))
+			updatedText, err := components.EditViaVI(commands.buildPasswordEditText(pass))
 			if err != nil {
 				return err
 			}
 
-			if err = p.parsePasswordEditText(updatedText, pass); err != nil {
+			if err = commands.parsePasswordEditText(updatedText, pass); err != nil {
 				return err
 			}
 
@@ -199,12 +210,12 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 
 			pass.BumpVersion()
 
-			err = p.passwordsUC.UpdatePassword(ctx, pass)
+			err = commands.passwordsUC.UpdatePassword(ctx, pass)
 			if err != nil {
 				var conflictErr *entity.PasswordConflictError
 
 				if errors.As(err, &conflictErr) {
-					return p.resolveConflict(ctx, conflictErr)
+					return commands.resolveConflict(ctx, conflictErr)
 				}
 
 				return err
@@ -215,7 +226,7 @@ func (p *PasswordsCommands) Edit() *cli.Command {
 	}
 }
 
-func (p *PasswordsCommands) Delete() *cli.Command {
+func (commands *PasswordsCommands) Delete() *cli.Command {
 	return &cli.Command{
 		Name: "delete",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -224,24 +235,24 @@ func (p *PasswordsCommands) Delete() *cli.Command {
 				return cli.Exit("got empty name", 1)
 			}
 
-			return p.passwordsUC.DeletePasswordByName(ctx, name)
+			return commands.passwordsUC.DeletePasswordByName(ctx, name)
 		},
 	}
 }
 
-func (p *PasswordsCommands) Sync() *cli.Command {
+func (commands *PasswordsCommands) Sync() *cli.Command {
 	return &cli.Command{
 		Name: "sync",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			updates, err := p.passwordsUC.GetUpdates(ctx)
+			updates, err := commands.passwordsUC.GetUpdates(ctx)
 			if err != nil {
 				return err
 			}
 
-			conflicts, operationErrors := p.applySyncUpdates(ctx, updates)
+			conflicts, operationErrors := commands.applySyncUpdates(ctx, updates)
 
 			for _, conflict := range conflicts {
-				err := p.resolveConflict(ctx, conflict)
+				err := commands.resolveConflict(ctx, conflict)
 				if err != nil {
 					operationErrors = append(operationErrors, err)
 				}
@@ -278,13 +289,13 @@ func (p *PasswordsCommands) Sync() *cli.Command {
 	}
 }
 
-func (p *PasswordsCommands) buildPasswordEditText(
+func (commands *PasswordsCommands) buildPasswordEditText(
 	password *entity.Password,
 ) string {
 	return fmt.Sprintf("%s\n%s", password.Value, password.Meta)
 }
 
-func (p *PasswordsCommands) parsePasswordEditText(
+func (commands *PasswordsCommands) parsePasswordEditText(
 	text string,
 	password *entity.Password,
 ) error {
@@ -307,22 +318,22 @@ func (p *PasswordsCommands) parsePasswordEditText(
 	return nil
 }
 
-func (p *PasswordsCommands) resolveConflict(
+func (commands *PasswordsCommands) resolveConflict(
 	ctx context.Context,
 	conflict *entity.PasswordConflictError,
 ) error {
 	if conflict.Type() == entity.PasswordDeletedConflictType {
-		return p.resolveDeleteConflict(ctx, conflict)
+		return commands.resolveDeleteConflict(ctx, conflict)
 	}
 
 	if conflict.Type() == entity.PasswordDiffConflictType {
-		return p.resolveDiffConflict(ctx, conflict)
+		return commands.resolveDiffConflict(ctx, conflict)
 	}
 
 	return ErrUnexpectedConflictType
 }
 
-func (p *PasswordsCommands) resolveDeleteConflict(
+func (commands *PasswordsCommands) resolveDeleteConflict(
 	ctx context.Context,
 	conflict *entity.PasswordConflictError,
 ) error {
@@ -337,17 +348,17 @@ func (p *PasswordsCommands) resolveDeleteConflict(
 	if shouldRecover {
 		conflict.Actual().Version = conflict.Incoming().Version + 1
 
-		return p.passwordsUC.UpdatePassword(ctx, conflict.Actual())
+		return commands.passwordsUC.UpdatePassword(ctx, conflict.Actual())
 	}
 
-	return p.passwordsUC.DeletePasswordLocal(ctx, conflict.Actual().Name)
+	return commands.passwordsUC.DeletePasswordLocal(ctx, conflict.Actual().Name)
 }
 
-func (p *PasswordsCommands) resolveDiffConflict(
+func (commands *PasswordsCommands) resolveDiffConflict(
 	ctx context.Context,
 	conflict *entity.PasswordConflictError,
 ) error {
-	key, err := p.keyProvider.Get(ctx)
+	key, err := commands.keyProvider.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -372,15 +383,15 @@ func (p *PasswordsCommands) resolveDiffConflict(
 	if shouldOverride {
 		conflict.Actual().Version = conflict.Incoming().Version + 1
 
-		return p.passwordsUC.UpdatePassword(ctx, conflict.Actual())
+		return commands.passwordsUC.UpdatePassword(ctx, conflict.Actual())
 	}
 
-	return p.passwordsUC.UpdatePasswordLocal(ctx, conflict.Incoming())
+	return commands.passwordsUC.UpdatePasswordLocal(ctx, conflict.Incoming())
 }
 
-func (p *PasswordsCommands) applySyncUpdates(
+func (commands *PasswordsCommands) applySyncUpdates(
 	ctx context.Context,
-	updates *usecase.PasswordsUpdates,
+	updates *entity.PasswordsUpdates,
 ) ([]*entity.PasswordConflictError, []error) {
 	var wg sync.WaitGroup
 
@@ -400,7 +411,7 @@ func (p *PasswordsCommands) applySyncUpdates(
 		go func() {
 			defer wg.Done()
 
-			resultChan <- p.passwordsUC.AddPasswordsLocal(ctx, updates.ToAdd)
+			resultChan <- commands.passwordsUC.AddPasswordsLocal(ctx, updates.ToAdd)
 		}()
 	}
 
@@ -411,7 +422,7 @@ func (p *PasswordsCommands) applySyncUpdates(
 			go func(password *entity.Password) {
 				defer wg.Done()
 
-				resultChan <- p.passwordsUC.UpdatePasswordLocal(ctx, password)
+				resultChan <- commands.passwordsUC.UpdatePasswordLocal(ctx, password)
 			}(password)
 		}
 	}
@@ -423,7 +434,7 @@ func (p *PasswordsCommands) applySyncUpdates(
 			go func(password *entity.Password) {
 				defer wg.Done()
 
-				resultChan <- p.passwordsUC.UpdatePassword(ctx, password)
+				resultChan <- commands.passwordsUC.UpdatePassword(ctx, password)
 			}(password)
 		}
 	}

@@ -126,7 +126,7 @@ func TestAuthServer_Register(t *testing.T) {
 		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, st.Code())
+		assert.Equal(t, codes.Internal, st.Code())
 	})
 
 	t.Run("token issuing error", func(t *testing.T) {
@@ -146,7 +146,7 @@ func TestAuthServer_Register(t *testing.T) {
 		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, st.Code())
+		assert.Equal(t, codes.Internal, st.Code())
 	})
 }
 
@@ -189,7 +189,7 @@ func TestAuthServer_Login(t *testing.T) {
 		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, st.Code())
+		assert.Equal(t, codes.Internal, st.Code())
 	})
 
 	t.Run("token issuing error", func(t *testing.T) {
@@ -209,6 +209,6 @@ func TestAuthServer_Login(t *testing.T) {
 		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, st.Code())
+		assert.Equal(t, codes.Internal, st.Code())
 	})
 }

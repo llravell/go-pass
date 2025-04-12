@@ -33,7 +33,7 @@ func (uc *PasswordsUseCase) DeletePasswordByName(
 	return uc.repo.DeletePasswordByName(ctx, userID, name)
 }
 
-func (uc *PasswordsUseCase) GetList(
+func (uc *PasswordsUseCase) GetPasswords(
 	ctx context.Context,
 	userID int,
 ) ([]*entity.Password, error) {
@@ -50,19 +50,7 @@ func (uc *PasswordsUseCase) SyncPassword(
 		userID,
 		password.Name,
 		func(actualPassword *entity.Password) (*entity.Password, error) {
-			if actualPassword.Deleted {
-				if password.Version > actualPassword.Version {
-					return password, nil
-				}
-
-				return nil, entity.NewPasswordDeletedConflictError(actualPassword, password)
-			}
-
-			if password.Version > actualPassword.Version {
-				return password, nil
-			}
-
-			return nil, entity.NewPasswordDiffConflictError(actualPassword, password)
+			return entity.ChooseMostActuralPassword(actualPassword, password)
 		},
 	)
 	if err != nil {

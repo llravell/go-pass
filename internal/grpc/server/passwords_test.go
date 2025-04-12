@@ -98,7 +98,7 @@ func TestPasswordsServer_GetList(t *testing.T) {
 		status, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, status.Code())
+		assert.Equal(t, codes.Internal, status.Code())
 	})
 }
 
@@ -132,6 +132,6 @@ func TestPasswordsServer_Delete(t *testing.T) {
 		st, ok := status.FromError(err)
 		require.True(t, ok)
 
-		assert.Equal(t, codes.Unknown, st.Code())
+		assert.Equal(t, codes.Internal, st.Code())
 	})
 }

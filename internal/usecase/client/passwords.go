@@ -9,12 +9,6 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
-type PasswordsUpdates struct {
-	ToAdd    []*entity.Password
-	ToUpdate []*entity.Password
-	ToSync   []*entity.Password
-}
-
 type PasswordsUseCase struct {
 	passwordsRepo   PasswordsRepository
 	passwordsClient pb.PasswordsClient
@@ -34,27 +28,27 @@ func (p *PasswordsUseCase) AddNewPassword(
 	ctx context.Context,
 	password entity.Password,
 ) error {
-	exists, err := p.passwordsRepo.PasswordExists(ctx, password.Name)
+	password.Version = 1
+
+	created, err := p.passwordsRepo.CreateNewPassword(ctx, &password)
 	if err != nil {
 		return err
 	}
 
-	if exists {
-		return entity.ErrPasswordAlreadyExist
+	if !created {
+		return nil
 	}
-
-	password.Version = 1
 
 	response, err := p.passwordsClient.Sync(ctx, password.ToPB())
 	if err != nil {
-		return p.passwordsRepo.CreateNewPassword(ctx, &password)
+		return err
 	}
 
-	if response.GetSuccess() {
-		return p.passwordsRepo.CreateNewPassword(ctx, &password)
+	if !response.GetSuccess() {
+		return entity.NewPasswordConflictErrorFromPB(&password, response.GetConflict())
 	}
 
-	return entity.NewPasswordConflictErrorFromPB(&password, response.GetConflict())
+	return nil
 }
 
 func (p *PasswordsUseCase) GetPasswordByName(
@@ -130,13 +124,13 @@ func (p *PasswordsUseCase) DeletePasswordByName(
 
 func (p *PasswordsUseCase) GetUpdates(
 	ctx context.Context,
-) (*PasswordsUpdates, error) {
+) (*entity.PasswordsUpdates, error) {
 	localPasswords, serverPasswords, err := p.fetchLocalAndServerPasswords(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	updates := &PasswordsUpdates{
+	updates := &entity.PasswordsUpdates{
 		ToAdd:    make([]*entity.Password, 0, len(serverPasswords)),
 		ToUpdate: make([]*entity.Password, 0, len(serverPasswords)),
 		ToSync:   make([]*entity.Password, 0, len(localPasswords)),
