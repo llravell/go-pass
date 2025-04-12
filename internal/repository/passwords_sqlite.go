@@ -139,6 +139,7 @@ func (repo *PasswordsSqliteRepository) CreatePasswordsMultiple(
 		args = append(args, password.Name, password.Value, password.Meta, password.Version)
 	}
 
+	//nolint:gosec
 	query := fmt.Sprintf(`
 		INSERT INTO passwords (name, encrypted_pass, meta, version)
 		VALUES %s;

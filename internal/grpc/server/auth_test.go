@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net"
 	"testing"
@@ -71,6 +70,7 @@ func startGRPCAuthServer(
 	return pb.NewAuthClient(conn), closeFn
 }
 
+//nolint:funlen
 func TestAuthServer_Register(t *testing.T) {
 	userRepo := mocks.NewMockUserRepository(gomock.NewController(t))
 	jwtIssuer := mocks.NewMockJWTIssuer(gomock.NewController(t))
@@ -94,7 +94,7 @@ func TestAuthServer_Register(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "token", response.Token)
+		assert.Equal(t, "token", response.GetToken())
 	})
 
 	t.Run("already exists error", func(t *testing.T) {
@@ -116,7 +116,7 @@ func TestAuthServer_Register(t *testing.T) {
 	t.Run("user storing error", func(t *testing.T) {
 		userRepo.EXPECT().
 			StoreUser(gomock.Any(), "login", gomock.Any()).
-			Return(nil, errors.New("Boom!"))
+			Return(nil, errBoom)
 
 		_, err := client.Register(t.Context(), &pb.AuthRequest{
 			Login:    "login",
@@ -136,7 +136,7 @@ func TestAuthServer_Register(t *testing.T) {
 
 		jwtIssuer.EXPECT().
 			Issue(1, gomock.Any()).
-			Return("", errors.New("Boom!"))
+			Return("", errBoom)
 
 		_, err := client.Register(t.Context(), &pb.AuthRequest{
 			Login:    "login",
@@ -173,13 +173,13 @@ func TestAuthServer_Login(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "token", response.Token)
+		assert.Equal(t, "token", response.GetToken())
 	})
 
 	t.Run("user fetching error", func(t *testing.T) {
 		userRepo.EXPECT().
 			FindUserByLogin(gomock.Any(), "login").
-			Return(nil, errors.New("Boom!"))
+			Return(nil, errBoom)
 
 		_, err := client.Login(t.Context(), &pb.AuthRequest{
 			Login:    "login",
@@ -199,7 +199,7 @@ func TestAuthServer_Login(t *testing.T) {
 
 		jwtIssuer.EXPECT().
 			Issue(1, gomock.Any()).
-			Return("", errors.New("Boom!"))
+			Return("", errBoom)
 
 		_, err := client.Login(t.Context(), &pb.AuthRequest{
 			Login:    "login",

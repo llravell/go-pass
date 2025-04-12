@@ -32,7 +32,6 @@ func NewAuthServer(
 
 func (s *AuthServer) Register(ctx context.Context, in *pb.AuthRequest) (*pb.AuthResponse, error) {
 	user, err := s.authUC.RegisterUser(ctx, in.GetLogin(), in.GetPassword())
-
 	if err != nil {
 		if errors.Is(err, entity.ErrUserConflict) {
 			return nil, status.Error(codes.AlreadyExists, "user already exists")

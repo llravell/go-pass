@@ -16,13 +16,13 @@ var pass = &entity.Password{
 }
 
 func TestPassword_Clone(t *testing.T) {
-	copy := pass.Clone()
+	clone := pass.Clone()
 
-	assert.Equal(t, pass.Name, copy.Name)
-	assert.Equal(t, pass.Value, copy.Value)
-	assert.Equal(t, pass.Meta, copy.Meta)
-	assert.Equal(t, pass.Version, copy.Version)
-	assert.Equal(t, pass.Deleted, copy.Deleted)
+	assert.Equal(t, pass.Name, clone.Name)
+	assert.Equal(t, pass.Value, clone.Value)
+	assert.Equal(t, pass.Meta, clone.Meta)
+	assert.Equal(t, pass.Version, clone.Version)
+	assert.Equal(t, pass.Deleted, clone.Deleted)
 }
 
 func TestPassword_Equal(t *testing.T) {
@@ -43,11 +43,11 @@ func TestPassword_Equal(t *testing.T) {
 
 	for field, mutation := range mutations {
 		t.Run("false if password has different "+field, func(t *testing.T) {
-			copy := pass.Clone()
+			clone := pass.Clone()
 
-			mutation(copy)
+			mutation(clone)
 
-			assert.False(t, pass.Equal(copy))
+			assert.False(t, pass.Equal(clone))
 		})
 	}
 

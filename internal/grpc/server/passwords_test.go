@@ -2,7 +2,6 @@ package server_test
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net"
 	"testing"
@@ -72,8 +71,8 @@ func TestPasswordsServer_GetList(t *testing.T) {
 		passwordsRepo.EXPECT().
 			GetPasswords(gomock.Any(), defaultUserID).
 			Return([]*entity.Password{
-				&entity.Password{Name: "a"},
-				&entity.Password{Name: "b"},
+				{Name: "a"},
+				{Name: "b"},
 			}, nil)
 
 		resp, err := client.GetList(t.Context(), &emptypb.Empty{})
@@ -91,7 +90,7 @@ func TestPasswordsServer_GetList(t *testing.T) {
 	t.Run("passwords fetching error", func(t *testing.T) {
 		passwordsRepo.EXPECT().
 			GetPasswords(gomock.Any(), defaultUserID).
-			Return(nil, errors.New("Boom!"))
+			Return(nil, errBoom)
 
 		_, err := client.GetList(t.Context(), &emptypb.Empty{})
 
@@ -125,7 +124,7 @@ func TestPasswordsServer_Delete(t *testing.T) {
 	t.Run("deleting error", func(t *testing.T) {
 		passwordsRepo.EXPECT().
 			DeletePasswordByName(gomock.Any(), defaultUserID, "a").
-			Return(errors.New("Boom!"))
+			Return(errBoom)
 
 		_, err := client.Delete(t.Context(), &pb.PasswordDeleteRequest{Name: "a"})
 

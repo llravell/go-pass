@@ -240,6 +240,7 @@ func (commands *PasswordsCommands) Delete() *cli.Command {
 	}
 }
 
+//nolint:cyclop
 func (commands *PasswordsCommands) Sync() *cli.Command {
 	return &cli.Command{
 		Name: "sync",
@@ -258,33 +259,35 @@ func (commands *PasswordsCommands) Sync() *cli.Command {
 				}
 			}
 
-			w := bufio.NewWriter(cmd.Writer)
+			writter := bufio.NewWriter(cmd.Writer)
 
-			if _, err = w.WriteString(fmt.Sprintf("Added: %d\n", len(updates.ToAdd))); err != nil {
-				return nil
+			if _, err = fmt.Fprintf(writter, "Added: %d\n", len(updates.ToAdd)); err != nil {
+				return err
 			}
 
-			if _, err = w.WriteString(fmt.Sprintf("Updated: %d\n", len(updates.ToUpdate))); err != nil {
-				return nil
+			if _, err = fmt.Fprintf(writter, "Updated: %d\n", len(updates.ToUpdate)); err != nil {
+				return err
 			}
 
-			if _, err = w.WriteString(fmt.Sprintf("Synced: %d\n", len(updates.ToSync))); err != nil {
-				return nil
+			if _, err = fmt.Fprintf(writter, "Synced: %d\n", len(updates.ToSync)); err != nil {
+				return err
 			}
 
-			if len(operationErrors) > 0 {
-				if _, err = w.WriteString("-------------------------\n"); err != nil {
+			if len(operationErrors) == 0 {
+				return writter.Flush()
+			}
+
+			if _, err = writter.WriteString("-------------------------\n"); err != nil {
+				return err
+			}
+
+			for _, operationError := range operationErrors {
+				if _, err = writter.WriteString("Sync error: " + operationError.Error()); err != nil {
 					return err
 				}
-
-				for _, operationError := range operationErrors {
-					if _, err = w.WriteString(fmt.Sprintf("Sync error: %s", operationError.Error())); err != nil {
-						return err
-					}
-				}
 			}
 
-			return w.Flush()
+			return writter.Flush()
 		},
 	}
 }
@@ -389,16 +392,12 @@ func (commands *PasswordsCommands) resolveDiffConflict(
 	return commands.passwordsUC.UpdatePasswordLocal(ctx, conflict.Incoming())
 }
 
+//nolint:funlen
 func (commands *PasswordsCommands) applySyncUpdates(
 	ctx context.Context,
 	updates *entity.PasswordsUpdates,
 ) ([]*entity.PasswordConflictError, []error) {
 	var wg sync.WaitGroup
-
-	type result struct {
-		password *entity.Password
-		err      error
-	}
 
 	operationsAmount := len(updates.ToUpdate) + len(updates.ToSync) + 1
 	operationErrors := make([]error, 0, operationsAmount)
