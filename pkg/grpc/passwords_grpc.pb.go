@@ -20,9 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Passwords_Sync_FullMethodName    = "/passwords.Passwords/Sync"
-	Passwords_Delete_FullMethodName  = "/passwords.Passwords/Delete"
-	Passwords_GetList_FullMethodName = "/passwords.Passwords/GetList"
+	Passwords_Sync_FullMethodName    = "/api.passwords.Passwords/Sync"
+	Passwords_Delete_FullMethodName  = "/api.passwords.Passwords/Delete"
+	Passwords_GetList_FullMethodName = "/api.passwords.Passwords/GetList"
 )
 
 // PasswordsClient is the client API for Passwords service.
@@ -177,7 +177,7 @@ func _Passwords_GetList_Handler(srv interface{}, ctx context.Context, dec func(i
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var Passwords_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "passwords.Passwords",
+	ServiceName: "api.passwords.Passwords",
 	HandlerType: (*PasswordsServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

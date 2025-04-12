@@ -30,7 +30,7 @@ type PasswordConflictError struct {
 	incoming *Password
 }
 
-func NewPasswordConflictErrorFromPB(actual *Password, conflict *pb.Conflict) *PasswordConflictError {
+func NewPasswordConflictErrorFromPB(actual *Password, conflict *pb.PasswordConflict) *PasswordConflictError {
 	var conflictType PasswordConflictType
 
 	if conflict.GetType() == pb.ConflictType_DELETED {
