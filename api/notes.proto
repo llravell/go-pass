@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+import "api/file.proto";
+
+package api.notes;
+
+option go_package = "pkg/grpc";
+
+service Notes {
+  rpc Upload(stream file.FileChunk) returns (NotesUploadResponse);
+}
+
+message NotesUploadResponse {
+  bool success = 1;
+}

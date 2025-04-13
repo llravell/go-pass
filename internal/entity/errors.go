@@ -19,6 +19,8 @@ var ErrNoSession = errors.New("user does not have active session")
 
 var ErrUnknownConflict = errors.New("unknown conflict")
 
+var ErrFileAlreadyUploading = errors.New("file has already uploading by another process")
+
 type ConflictType string
 
 const (

@@ -37,7 +37,14 @@ type (
 		DeleteCardByName(ctx context.Context, userID int, name string) error
 		GetCards(ctx context.Context, userID int) ([]*entity.Card, error)
 	}
-
+	FilesRepository interface {
+		UploadFile(
+			ctx context.Context,
+			userID int,
+			file *entity.File,
+			uploadFn func() (int64, error),
+		) error
+	}
 	JWTIssuer interface {
 		Issue(userID int, ttl time.Duration) (string, error)
 	}

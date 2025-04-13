@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package api.file;
+
+option go_package = "pkg/grpc";
+
+message FileChunk {
+  string filename = 1;
+  bytes data = 2;
+}
