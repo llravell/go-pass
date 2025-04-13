@@ -13,6 +13,7 @@ linters:
     - testifylint
     - testpackage
     - wrapcheck
+    - dupl
   settings:
     depguard:
       rules:

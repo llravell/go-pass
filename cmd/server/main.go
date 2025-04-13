@@ -42,12 +42,15 @@ func main() {
 
 	usersRepository := repository.NewUsersRepository(db)
 	passwordsRepository := repository.NewPasswordsPostgresRepository(db)
+	cardsRepository := repository.NewCardsPostgresRepository(db)
 
 	authUsecase := usecase.NewAuthUseCase(usersRepository, jwtManager)
 	passwordsUsecase := usecase.NewPasswordsUseCase(passwordsRepository)
+	cardsUsecase := usecase.NewCardsUseCase(cardsRepository)
 
 	authServer := server.NewAuthServer(authUsecase, &log)
 	passwordsServer := server.NewPasswordsServer(passwordsUsecase, &log)
+	cardsServer := server.NewCardsServer(cardsUsecase, &log)
 
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
@@ -60,6 +63,7 @@ func main() {
 	)
 	pb.RegisterAuthServer(srv, authServer)
 	pb.RegisterPasswordsServer(srv, passwordsServer)
+	pb.RegisterCardsServer(srv, cardsServer)
 
 	log.Info().Msgf("server started on %s", cfg.Addr)
 

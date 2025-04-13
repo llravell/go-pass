@@ -21,11 +21,11 @@ type CardsServer struct {
 }
 
 func NewCardsServer(
-	CardsUC *usecase.CardsUseCase,
+	cardsUC *usecase.CardsUseCase,
 	log *zerolog.Logger,
 ) *CardsServer {
 	return &CardsServer{
-		cardsUC: CardsUC,
+		cardsUC: cardsUC,
 		log:     log,
 	}
 }
