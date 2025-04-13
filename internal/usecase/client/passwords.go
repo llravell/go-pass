@@ -124,13 +124,13 @@ func (p *PasswordsUseCase) DeletePasswordByName(
 
 func (p *PasswordsUseCase) GetUpdates(
 	ctx context.Context,
-) (*entity.PasswordsUpdates, error) {
+) (*entity.SyncUpdates[*entity.Password], error) {
 	localPasswords, serverPasswords, err := p.fetchLocalAndServerPasswords(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	updates := &entity.PasswordsUpdates{
+	updates := &entity.SyncUpdates[*entity.Password]{
 		ToAdd:    make([]*entity.Password, 0, len(serverPasswords)),
 		ToUpdate: make([]*entity.Password, 0, len(serverPasswords)),
 		ToSync:   make([]*entity.Password, 0, len(localPasswords)),

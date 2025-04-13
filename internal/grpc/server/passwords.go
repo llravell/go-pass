@@ -40,7 +40,7 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.Passwo
 
 	err := s.passwordsUC.SyncPassword(ctx, userID, entity.NewPasswordFromPB(in))
 	if err != nil {
-		var conflictErr *entity.PasswordConflictError
+		var conflictErr *entity.ConflictError[*entity.Password]
 
 		if errors.As(err, &conflictErr) {
 			s.log.Info().

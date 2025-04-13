@@ -13,6 +13,14 @@ type Password struct {
 	Deleted bool
 }
 
+func (pass *Password) GetVersion() int {
+	return pass.Version
+}
+
+func (pass *Password) IsDeleted() bool {
+	return pass.Deleted
+}
+
 func (pass *Password) BumpVersion() {
 	pass.Version++
 }
@@ -72,20 +80,4 @@ func NewPasswordFromPB(password *pb.Password) *Password {
 		Meta:    password.GetMeta(),
 		Version: int(password.GetVersion()),
 	}
-}
-
-func ChooseMostActuralPassword(current, incoming *Password) (*Password, *PasswordConflictError) {
-	if current.Deleted {
-		if incoming.Version > current.Version {
-			return incoming, nil
-		}
-
-		return nil, NewPasswordDeletedConflictError(current, incoming)
-	}
-
-	if incoming.Version > current.Version {
-		return incoming, nil
-	}
-
-	return nil, NewPasswordDiffConflictError(current, incoming)
 }

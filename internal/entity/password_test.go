@@ -5,7 +5,6 @@ import (
 
 	"github.com/llravell/go-pass/internal/entity"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 var pass = &entity.Password{
@@ -53,54 +52,5 @@ func TestPassword_Equal(t *testing.T) {
 
 	t.Run("true if password has same name, value, meta and version", func(t *testing.T) {
 		assert.True(t, pass.Equal(pass.Clone()))
-	})
-}
-
-func TestChooseMostActuralPassword(t *testing.T) {
-	t.Run("incoming pass would be more actual if has greater version", func(t *testing.T) {
-		current := pass.Clone()
-		incoming := pass.Clone()
-
-		incoming.BumpVersion()
-
-		mostActualPass, err := entity.ChooseMostActuralPassword(current, incoming)
-		require.Nil(t, err)
-
-		assert.Equal(t, incoming, mostActualPass)
-
-		current.Deleted = true
-		mostActualPass, err = entity.ChooseMostActuralPassword(current, incoming)
-		require.Nil(t, err)
-
-		assert.Equal(t, incoming, mostActualPass)
-	})
-
-	t.Run("will be deleted conflict if current password already deleted and has greater version", func(t *testing.T) {
-		current := pass.Clone()
-		incoming := pass.Clone()
-
-		current.BumpVersion()
-		current.Deleted = true
-
-		_, err := entity.ChooseMostActuralPassword(current, incoming)
-		require.NotNil(t, err)
-
-		assert.Equal(t, entity.PasswordDeletedConflictType, err.Type())
-		assert.Equal(t, current, err.Actual())
-		assert.Equal(t, incoming, err.Incoming())
-	})
-
-	t.Run("will be diff conflict if current password has greater version", func(t *testing.T) {
-		current := pass.Clone()
-		incoming := pass.Clone()
-
-		current.BumpVersion()
-
-		_, err := entity.ChooseMostActuralPassword(current, incoming)
-		require.NotNil(t, err)
-
-		assert.Equal(t, entity.PasswordDiffConflictType, err.Type())
-		assert.Equal(t, current, err.Actual())
-		assert.Equal(t, incoming, err.Incoming())
 	})
 }

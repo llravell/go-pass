@@ -41,7 +41,7 @@ type PasswordsUseCase interface {
 	UpdatePasswordLocal(ctx context.Context, password *entity.Password) error
 	DeletePasswordLocal(ctx context.Context, name string) error
 	AddPasswordsLocal(ctx context.Context, passwords []*entity.Password) error
-	GetUpdates(ctx context.Context) (*entity.PasswordsUpdates, error)
+	GetUpdates(ctx context.Context) (*entity.SyncUpdates[*entity.Password], error)
 	AddNewPassword(ctx context.Context, password entity.Password) error
 	DeletePasswordByName(ctx context.Context, name string) error
 }
@@ -158,7 +158,7 @@ func (commands *PasswordsCommands) Add() *cli.Command {
 
 			err = commands.passwordsUC.AddNewPassword(ctx, password)
 			if err != nil {
-				var conflictErr *entity.PasswordConflictError
+				var conflictErr *entity.ConflictError[*entity.Password]
 
 				if errors.As(err, &conflictErr) {
 					return commands.resolveConflict(ctx, conflictErr)
@@ -212,7 +212,7 @@ func (commands *PasswordsCommands) Edit() *cli.Command {
 
 			err = commands.passwordsUC.UpdatePassword(ctx, pass)
 			if err != nil {
-				var conflictErr *entity.PasswordConflictError
+				var conflictErr *entity.ConflictError[*entity.Password]
 
 				if errors.As(err, &conflictErr) {
 					return commands.resolveConflict(ctx, conflictErr)
@@ -323,13 +323,13 @@ func (commands *PasswordsCommands) parsePasswordEditText(
 
 func (commands *PasswordsCommands) resolveConflict(
 	ctx context.Context,
-	conflict *entity.PasswordConflictError,
+	conflict *entity.ConflictError[*entity.Password],
 ) error {
-	if conflict.Type() == entity.PasswordDeletedConflictType {
+	if conflict.Type() == entity.DeletedConflictType {
 		return commands.resolveDeleteConflict(ctx, conflict)
 	}
 
-	if conflict.Type() == entity.PasswordDiffConflictType {
+	if conflict.Type() == entity.DiffConflictType {
 		return commands.resolveDiffConflict(ctx, conflict)
 	}
 
@@ -338,7 +338,7 @@ func (commands *PasswordsCommands) resolveConflict(
 
 func (commands *PasswordsCommands) resolveDeleteConflict(
 	ctx context.Context,
-	conflict *entity.PasswordConflictError,
+	conflict *entity.ConflictError[*entity.Password],
 ) error {
 	shouldRecover, err := components.BoolPrompt(fmt.Sprintf(
 		deleteConflictPromptTemplate,
@@ -359,7 +359,7 @@ func (commands *PasswordsCommands) resolveDeleteConflict(
 
 func (commands *PasswordsCommands) resolveDiffConflict(
 	ctx context.Context,
-	conflict *entity.PasswordConflictError,
+	conflict *entity.ConflictError[*entity.Password],
 ) error {
 	key, err := commands.keyProvider.Get(ctx)
 	if err != nil {
@@ -395,13 +395,13 @@ func (commands *PasswordsCommands) resolveDiffConflict(
 //nolint:funlen
 func (commands *PasswordsCommands) applySyncUpdates(
 	ctx context.Context,
-	updates *entity.PasswordsUpdates,
-) ([]*entity.PasswordConflictError, []error) {
+	updates *entity.SyncUpdates[*entity.Password],
+) ([]*entity.ConflictError[*entity.Password], []error) {
 	var wg sync.WaitGroup
 
 	operationsAmount := len(updates.ToUpdate) + len(updates.ToSync) + 1
 	operationErrors := make([]error, 0, operationsAmount)
-	conflicts := make([]*entity.PasswordConflictError, 0, len(updates.ToSync))
+	conflicts := make([]*entity.ConflictError[*entity.Password], 0, len(updates.ToSync))
 	resultChan := make(chan error, operationsAmount)
 
 	if len(updates.ToAdd) > 0 {
@@ -449,7 +449,7 @@ func (commands *PasswordsCommands) applySyncUpdates(
 			continue
 		}
 
-		var conflictErr *entity.PasswordConflictError
+		var conflictErr *entity.ConflictError[*entity.Password]
 
 		if errors.As(err, &conflictErr) {
 			conflicts = append(conflicts, conflictErr)
