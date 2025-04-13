@@ -153,6 +153,87 @@ func (mr *MockPasswordsRepositoryMockRecorder) UpdateByName(ctx, userID, name, u
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByName", reflect.TypeOf((*MockPasswordsRepository)(nil).UpdateByName), ctx, userID, name, updateFn)
 }
 
+// MockCardsRepository is a mock of CardsRepository interface.
+type MockCardsRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockCardsRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockCardsRepositoryMockRecorder is the mock recorder for MockCardsRepository.
+type MockCardsRepositoryMockRecorder struct {
+	mock *MockCardsRepository
+}
+
+// NewMockCardsRepository creates a new mock instance.
+func NewMockCardsRepository(ctrl *gomock.Controller) *MockCardsRepository {
+	mock := &MockCardsRepository{ctrl: ctrl}
+	mock.recorder = &MockCardsRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockCardsRepository) EXPECT() *MockCardsRepositoryMockRecorder {
+	return m.recorder
+}
+
+// AddNewCard mocks base method.
+func (m *MockCardsRepository) AddNewCard(ctx context.Context, userID int, card *entity.Card) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "AddNewCard", ctx, userID, card)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// AddNewCard indicates an expected call of AddNewCard.
+func (mr *MockCardsRepositoryMockRecorder) AddNewCard(ctx, userID, card any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNewCard", reflect.TypeOf((*MockCardsRepository)(nil).AddNewCard), ctx, userID, card)
+}
+
+// DeleteCardByName mocks base method.
+func (m *MockCardsRepository) DeleteCardByName(ctx context.Context, userID int, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteCardByName", ctx, userID, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteCardByName indicates an expected call of DeleteCardByName.
+func (mr *MockCardsRepositoryMockRecorder) DeleteCardByName(ctx, userID, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteCardByName", reflect.TypeOf((*MockCardsRepository)(nil).DeleteCardByName), ctx, userID, name)
+}
+
+// GetCards mocks base method.
+func (m *MockCardsRepository) GetCards(ctx context.Context, userID int) ([]*entity.Card, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCards", ctx, userID)
+	ret0, _ := ret[0].([]*entity.Card)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCards indicates an expected call of GetCards.
+func (mr *MockCardsRepositoryMockRecorder) GetCards(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCards", reflect.TypeOf((*MockCardsRepository)(nil).GetCards), ctx, userID)
+}
+
+// UpdateByName mocks base method.
+func (m *MockCardsRepository) UpdateByName(ctx context.Context, userID int, name string, updateFn func(*entity.Card) (*entity.Card, error)) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateByName", ctx, userID, name, updateFn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateByName indicates an expected call of UpdateByName.
+func (mr *MockCardsRepositoryMockRecorder) UpdateByName(ctx, userID, name, updateFn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByName", reflect.TypeOf((*MockCardsRepository)(nil).UpdateByName), ctx, userID, name, updateFn)
+}
+
 // MockJWTIssuer is a mock of JWTIssuer interface.
 type MockJWTIssuer struct {
 	ctrl     *gomock.Controller
