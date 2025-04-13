@@ -19,6 +19,14 @@ type Card struct {
 	Deleted        bool
 }
 
+func (card *Card) GetVersion() int {
+	return card.Version
+}
+
+func (card *Card) IsDeleted() bool {
+	return card.Deleted
+}
+
 func (card *Card) BumpVersion() {
 	card.Version++
 }

@@ -26,6 +26,17 @@ type (
 		DeletePasswordByName(ctx context.Context, userID int, name string) error
 		GetPasswords(ctx context.Context, userID int) ([]*entity.Password, error)
 	}
+	CardsRepository interface {
+		UpdateByName(
+			ctx context.Context,
+			userID int,
+			name string,
+			updateFn func(password *entity.Card) (*entity.Card, error),
+		) error
+		AddNewCard(ctx context.Context, userID int, card *entity.Card) error
+		DeleteCardByName(ctx context.Context, userID int, name string) error
+		GetCards(ctx context.Context, userID int) ([]*entity.Card, error)
+	}
 
 	JWTIssuer interface {
 		Issue(userID int, ttl time.Duration) (string, error)
