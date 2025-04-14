@@ -70,3 +70,25 @@ func (repo *FilesPostgresRepository) UploadFile(
 		return nil
 	})
 }
+
+func (repo *FilesPostgresRepository) GetFileByName(
+	ctx context.Context,
+	userID int,
+	bucket string,
+	name string,
+) (*entity.File, error) {
+	file := entity.File{Name: name, MinioBucket: bucket}
+
+	row := repo.conn.QueryRowContext(ctx, `
+		SELECT meta, size
+		FROM files
+		WHERE user_id=$1 AND minio_bucket=$2 AND name=$3 AND upload_status='done' AND NOT is_deleted;
+	`, userID, bucket, name)
+
+	err := row.Scan(&file.Meta, &file.Size)
+	if err != nil {
+		return nil, err
+	}
+
+	return &file, nil
+}

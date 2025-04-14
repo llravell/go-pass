@@ -8,8 +8,13 @@ option go_package = "pkg/grpc";
 
 service Notes {
   rpc Upload(stream file.FileChunk) returns (NotesUploadResponse);
+  rpc Download(NotesDownloadRequest) returns (stream file.FileChunk);
 }
 
 message NotesUploadResponse {
   bool success = 1;
+}
+
+message NotesDownloadRequest {
+  string name = 1;
 }

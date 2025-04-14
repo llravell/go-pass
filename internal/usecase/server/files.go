@@ -42,3 +42,22 @@ func (uc *FilesUseCase) UploadFile(
 		return info.Size, nil
 	})
 }
+
+func (uc *FilesUseCase) DownloadFile(
+	ctx context.Context,
+	userID int,
+	bucket string,
+	name string,
+) (io.ReadCloser, error) {
+	file, err := uc.repo.GetFileByName(ctx, userID, bucket, name)
+	if err != nil {
+		return nil, err
+	}
+
+	obj, err := uc.minioClient.GetObject(ctx, file.MinioBucket, file.Name, minio.GetObjectOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	return obj, nil
+}

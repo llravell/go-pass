@@ -1,6 +1,9 @@
 package server
 
 import (
+	"errors"
+	"io"
+
 	"github.com/llravell/go-pass/internal/entity"
 	usecase "github.com/llravell/go-pass/internal/usecase/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
@@ -36,16 +39,16 @@ func (r *noteUploadReader) Read(p []byte) (int, error) {
 type NotesServer struct {
 	pb.UnimplementedNotesServer
 
-	notesUC *usecase.FilesUseCase
+	filesUC *usecase.FilesUseCase
 	log     *zerolog.Logger
 }
 
 func NewNotesServer(
-	notesUC *usecase.FilesUseCase,
+	filesUC *usecase.FilesUseCase,
 	log *zerolog.Logger,
 ) *NotesServer {
 	return &NotesServer{
-		notesUC: notesUC,
+		filesUC: filesUC,
 		log:     log,
 	}
 }
@@ -74,7 +77,7 @@ func (s *NotesServer) Upload(stream grpc.ClientStreamingServer[pb.FileChunk, pb.
 		stream: stream,
 	}
 
-	err = s.notesUC.UploadFile(stream.Context(), userID, file, reader)
+	err = s.filesUC.UploadFile(stream.Context(), userID, file, reader)
 	if err != nil {
 		return err
 	}
@@ -82,4 +85,45 @@ func (s *NotesServer) Upload(stream grpc.ClientStreamingServer[pb.FileChunk, pb.
 	return stream.SendAndClose(&pb.NotesUploadResponse{
 		Success: true,
 	})
+}
+
+func (s *NotesServer) Download(in *pb.NotesDownloadRequest, stream grpc.ServerStreamingServer[pb.FileChunk]) error {
+	userID, ok := GetUserIDFromContext(stream.Context())
+	if !ok {
+		s.log.Error().Msg("getting userID from ctx failed")
+
+		return status.Error(codes.Unauthenticated, "failed to resolve user id")
+	}
+
+	fileReader, err := s.filesUC.DownloadFile(stream.Context(), userID, notesMinioBucket, in.GetName())
+	if err != nil {
+		return err
+	}
+
+	defer fileReader.Close()
+
+	buffer := make([]byte, 1024) // 1 KB
+
+	for {
+		n, err := fileReader.Read(buffer)
+		if err != nil {
+			if !errors.Is(err, io.EOF) {
+				return err
+			}
+
+			if n == 0 {
+				break
+			}
+		}
+
+		chunk := &pb.FileChunk{
+			Data: buffer[:n],
+		}
+
+		if err := stream.Send(chunk); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

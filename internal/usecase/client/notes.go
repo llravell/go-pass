@@ -71,3 +71,34 @@ func (uc *NotesUseCase) UploadFile(
 
 	return nil
 }
+
+func (uc *NotesUseCase) DownloadFile(
+	ctx context.Context,
+	name string,
+	file *os.File,
+) error {
+	stream, err := uc.notesClient.Download(ctx, &pb.NotesDownloadRequest{Name: name})
+	if err != nil {
+		return err
+	}
+
+	for {
+		chunk, err := stream.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			return err
+		}
+
+		data := chunk.GetData()
+
+		_, err = file.Write(data)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

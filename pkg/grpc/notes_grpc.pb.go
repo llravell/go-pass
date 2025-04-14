@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Notes_Upload_FullMethodName = "/api.notes.Notes/Upload"
+	Notes_Upload_FullMethodName   = "/api.notes.Notes/Upload"
+	Notes_Download_FullMethodName = "/api.notes.Notes/Download"
 )
 
 // NotesClient is the client API for Notes service.
@@ -27,6 +28,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NotesClient interface {
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileChunk, NotesUploadResponse], error)
+	Download(ctx context.Context, in *NotesDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error)
 }
 
 type notesClient struct {
@@ -50,11 +52,31 @@ func (c *notesClient) Upload(ctx context.Context, opts ...grpc.CallOption) (grpc
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Notes_UploadClient = grpc.ClientStreamingClient[FileChunk, NotesUploadResponse]
 
+func (c *notesClient) Download(ctx context.Context, in *NotesDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	stream, err := c.cc.NewStream(ctx, &Notes_ServiceDesc.Streams[1], Notes_Download_FullMethodName, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &grpc.GenericClientStream[NotesDownloadRequest, FileChunk]{ClientStream: stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Notes_DownloadClient = grpc.ServerStreamingClient[FileChunk]
+
 // NotesServer is the server API for Notes service.
 // All implementations must embed UnimplementedNotesServer
 // for forward compatibility.
 type NotesServer interface {
 	Upload(grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]) error
+	Download(*NotesDownloadRequest, grpc.ServerStreamingServer[FileChunk]) error
 	mustEmbedUnimplementedNotesServer()
 }
 
@@ -67,6 +89,9 @@ type UnimplementedNotesServer struct{}
 
 func (UnimplementedNotesServer) Upload(grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
+}
+func (UnimplementedNotesServer) Download(*NotesDownloadRequest, grpc.ServerStreamingServer[FileChunk]) error {
+	return status.Errorf(codes.Unimplemented, "method Download not implemented")
 }
 func (UnimplementedNotesServer) mustEmbedUnimplementedNotesServer() {}
 func (UnimplementedNotesServer) testEmbeddedByValue()               {}
@@ -96,6 +121,17 @@ func _Notes_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Notes_UploadServer = grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]
 
+func _Notes_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(NotesDownloadRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(NotesServer).Download(m, &grpc.GenericServerStream[NotesDownloadRequest, FileChunk]{ServerStream: stream})
+}
+
+// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
+type Notes_DownloadServer = grpc.ServerStreamingServer[FileChunk]
+
 // Notes_ServiceDesc is the grpc.ServiceDesc for Notes service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -108,6 +144,11 @@ var Notes_ServiceDesc = grpc.ServiceDesc{
 			StreamName:    "Upload",
 			Handler:       _Notes_Upload_Handler,
 			ClientStreams: true,
+		},
+		{
+			StreamName:    "Download",
+			Handler:       _Notes_Download_Handler,
+			ServerStreams: true,
 		},
 	},
 	Metadata: "api/notes.proto",
