@@ -17,16 +17,17 @@ type noteUploadReader struct {
 	stream grpc.ClientStreamingServer[pb.FileChunk, pb.NotesUploadResponse]
 }
 
-func (r *noteUploadReader) Read(p []byte) (n int, err error) {
+func (r *noteUploadReader) Read(p []byte) (int, error) {
 	if len(r.buf) == 0 {
 		chunk, err := r.stream.Recv()
 		if err != nil {
 			return 0, err
 		}
+
 		r.buf = chunk.GetData()
 	}
 
-	n = copy(p, r.buf)
+	n := copy(p, r.buf)
 	r.buf = r.buf[n:]
 
 	return n, nil
@@ -64,6 +65,7 @@ func (s *NotesServer) Upload(stream grpc.ClientStreamingServer[pb.FileChunk, pb.
 
 	file := &entity.File{
 		Name:        firstChunk.GetFilename(),
+		Meta:        firstChunk.GetMeta(),
 		MinioBucket: notesMinioBucket,
 	}
 

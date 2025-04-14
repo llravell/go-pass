@@ -72,6 +72,7 @@ func buildCmd(db *sql.DB) *cli.Command {
 		":3200",
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithUnaryInterceptor(client.AuthInterceptor(sessionRepo)),
+		grpc.WithStreamInterceptor(client.AuthStreamInterceptor(sessionRepo)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -79,13 +80,16 @@ func buildCmd(db *sql.DB) *cli.Command {
 
 	authClient := pb.NewAuthClient(conn)
 	passwordsClient := pb.NewPasswordsClient(conn)
+	notesClient := pb.NewNotesClient(conn)
 
 	authUseCase := usecase.NewAuthUseCase(sessionRepo, authClient)
 	passwordsUseCase := usecase.NewPasswordsUseCase(passwordsRepo, passwordsClient)
+	notesUseCase := usecase.NewNotesUseCase(notesClient)
 
 	encryptionKeyProvider := components.NewEncryptionKeyProvider(authUseCase)
 	authCommands := commands.NewAuthCommands(authUseCase)
 	passwordsCommands := commands.NewPasswordsCommands(passwordsUseCase, encryptionKeyProvider)
+	notesCommands := commands.NewNotesCommands(notesUseCase)
 
 	return &cli.Command{
 		Name: "GOPASS",
@@ -107,6 +111,12 @@ func buildCmd(db *sql.DB) *cli.Command {
 					passwordsCommands.Add(),
 					passwordsCommands.Edit(),
 					passwordsCommands.Delete(),
+				},
+			},
+			{
+				Name: "notes",
+				Commands: []*cli.Command{
+					notesCommands.Upload(),
 				},
 			},
 		},

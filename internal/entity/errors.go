@@ -21,6 +21,8 @@ var ErrUnknownConflict = errors.New("unknown conflict")
 
 var ErrFileAlreadyUploading = errors.New("file has already uploading by another process")
 
+var ErrFileUploadingFailed = errors.New("file uploading failed")
+
 type ConflictType string
 
 const (
