@@ -64,6 +64,7 @@ func initStorage() (*sql.DB, error) {
 	return db, nil
 }
 
+//nolint:funlen
 func buildCmd(db *sql.DB) *cli.Command {
 	sessionRepo := repository.NewSessionSqliteRepository(db)
 	passwordsRepo := repository.NewPasswordsSqliteRepository(db)
@@ -116,6 +117,7 @@ func buildCmd(db *sql.DB) *cli.Command {
 			{
 				Name: "notes",
 				Commands: []*cli.Command{
+					notesCommands.List(),
 					notesCommands.Upload(),
 					notesCommands.Download(),
 				},

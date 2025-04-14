@@ -8,6 +8,7 @@ import (
 
 	"github.com/llravell/go-pass/internal/entity"
 	pb "github.com/llravell/go-pass/pkg/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type NotesUseCase struct {
@@ -22,7 +23,7 @@ func NewNotesUseCase(
 	}
 }
 
-func (uc *NotesUseCase) UploadFile(
+func (uc *NotesUseCase) UploadNote(
 	ctx context.Context,
 	name, meta string,
 	file *os.File,
@@ -72,7 +73,7 @@ func (uc *NotesUseCase) UploadFile(
 	return nil
 }
 
-func (uc *NotesUseCase) DownloadFile(
+func (uc *NotesUseCase) DownloadNote(
 	ctx context.Context,
 	name string,
 	file *os.File,
@@ -101,4 +102,25 @@ func (uc *NotesUseCase) DownloadFile(
 	}
 
 	return nil
+}
+
+func (uc *NotesUseCase) GetNotes(
+	ctx context.Context,
+) ([]*entity.File, error) {
+	response, err := uc.notesClient.GetList(ctx, &emptypb.Empty{})
+	if err != nil {
+		return nil, err
+	}
+
+	notes := make([]*entity.File, 0, len(response.GetNotes()))
+
+	for _, note := range response.GetNotes() {
+		notes = append(notes, &entity.File{
+			Name: note.GetName(),
+			Meta: note.GetMeta(),
+			Size: note.GetSize(),
+		})
+	}
+
+	return notes, nil
 }

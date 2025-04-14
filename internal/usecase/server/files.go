@@ -61,3 +61,11 @@ func (uc *FilesUseCase) DownloadFile(
 
 	return obj, nil
 }
+
+func (uc *FilesUseCase) GetFiles(
+	ctx context.Context,
+	userID int,
+	bucket string,
+) ([]*entity.File, error) {
+	return uc.repo.GetFiles(ctx, userID, bucket)
+}

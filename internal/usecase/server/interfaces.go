@@ -50,6 +50,11 @@ type (
 			bucket string,
 			name string,
 		) (*entity.File, error)
+		GetFiles(
+			ctx context.Context,
+			userID int,
+			bucket string,
+		) ([]*entity.File, error)
 	}
 	JWTIssuer interface {
 		Issue(userID int, ttl time.Duration) (string, error)

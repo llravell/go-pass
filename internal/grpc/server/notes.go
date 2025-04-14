@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"io"
 
@@ -11,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 const notesMinioBucket = "notes"
@@ -126,4 +128,34 @@ func (s *NotesServer) Download(in *pb.NotesDownloadRequest, stream grpc.ServerSt
 	}
 
 	return nil
+}
+
+func (s *NotesServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.NotesGetListResponse, error) {
+	userID, ok := GetUserIDFromContext(ctx)
+	if !ok {
+		s.log.Error().Msg("getting userID from ctx failed")
+
+		return nil, status.Error(codes.Unauthenticated, "failed to resolve user id")
+	}
+
+	notes, err := s.filesUC.GetFiles(ctx, userID, notesMinioBucket)
+	if err != nil {
+		s.log.Error().Err(err).Msg("fetching notes failed")
+
+		return nil, status.Error(codes.Internal, "fetching notes failed")
+	}
+
+	response := &pb.NotesGetListResponse{
+		Notes: make([]*pb.FileInfo, 0, len(notes)),
+	}
+
+	for _, note := range notes {
+		response.Notes = append(response.Notes, &pb.FileInfo{
+			Name: note.Name,
+			Meta: note.Meta,
+			Size: note.Size,
+		})
+	}
+
+	return response, nil
 }

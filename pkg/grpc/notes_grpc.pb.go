@@ -11,6 +11,7 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
@@ -19,6 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	Notes_GetList_FullMethodName  = "/api.notes.Notes/GetList"
 	Notes_Upload_FullMethodName   = "/api.notes.Notes/Upload"
 	Notes_Download_FullMethodName = "/api.notes.Notes/Download"
 )
@@ -27,6 +29,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NotesClient interface {
+	GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NotesGetListResponse, error)
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileChunk, NotesUploadResponse], error)
 	Download(ctx context.Context, in *NotesDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error)
 }
@@ -37,6 +40,16 @@ type notesClient struct {
 
 func NewNotesClient(cc grpc.ClientConnInterface) NotesClient {
 	return &notesClient{cc}
+}
+
+func (c *notesClient) GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NotesGetListResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(NotesGetListResponse)
+	err := c.cc.Invoke(ctx, Notes_GetList_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *notesClient) Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileChunk, NotesUploadResponse], error) {
@@ -75,6 +88,7 @@ type Notes_DownloadClient = grpc.ServerStreamingClient[FileChunk]
 // All implementations must embed UnimplementedNotesServer
 // for forward compatibility.
 type NotesServer interface {
+	GetList(context.Context, *emptypb.Empty) (*NotesGetListResponse, error)
 	Upload(grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]) error
 	Download(*NotesDownloadRequest, grpc.ServerStreamingServer[FileChunk]) error
 	mustEmbedUnimplementedNotesServer()
@@ -87,6 +101,9 @@ type NotesServer interface {
 // pointer dereference when methods are called.
 type UnimplementedNotesServer struct{}
 
+func (UnimplementedNotesServer) GetList(context.Context, *emptypb.Empty) (*NotesGetListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetList not implemented")
+}
 func (UnimplementedNotesServer) Upload(grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
 }
@@ -114,6 +131,24 @@ func RegisterNotesServer(s grpc.ServiceRegistrar, srv NotesServer) {
 	s.RegisterService(&Notes_ServiceDesc, srv)
 }
 
+func _Notes_GetList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(emptypb.Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotesServer).GetList(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Notes_GetList_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotesServer).GetList(ctx, req.(*emptypb.Empty))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Notes_Upload_Handler(srv interface{}, stream grpc.ServerStream) error {
 	return srv.(NotesServer).Upload(&grpc.GenericServerStream[FileChunk, NotesUploadResponse]{ServerStream: stream})
 }
@@ -138,7 +173,12 @@ type Notes_DownloadServer = grpc.ServerStreamingServer[FileChunk]
 var Notes_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "api.notes.Notes",
 	HandlerType: (*NotesServer)(nil),
-	Methods:     []grpc.MethodDesc{},
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetList",
+			Handler:    _Notes_GetList_Handler,
+		},
+	},
 	Streams: []grpc.StreamDesc{
 		{
 			StreamName:    "Upload",

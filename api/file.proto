@@ -9,3 +9,9 @@ message FileChunk {
   string meta = 2;
   bytes data = 3;
 }
+
+message FileInfo {
+  string name = 1;
+  string meta = 2;
+  int64 size = 3;
+}

@@ -92,3 +92,43 @@ func (repo *FilesPostgresRepository) GetFileByName(
 
 	return &file, nil
 }
+
+func (repo *FilesPostgresRepository) GetFiles(
+	ctx context.Context,
+	userID int,
+	bucket string,
+) ([]*entity.File, error) {
+	var files []*entity.File
+
+	rows, err := repo.conn.QueryContext(ctx, `
+		SELECT name, meta, size
+		FROM files
+		WHERE user_id=$1 AND minio_bucket=$2 AND upload_status='done' AND NOT is_deleted;
+	`, userID, bucket)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		file := entity.File{MinioBucket: bucket}
+
+		err = rows.Scan(&file.Name, &file.Meta, &file.Size)
+		if err != nil {
+			return nil, err
+		}
+
+		files = append(files, &file)
+	}
+
+	if err = rows.Err(); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return files, nil
+		}
+
+		return nil, err
+	}
+
+	return files, nil
+}
