@@ -14,7 +14,6 @@ type (
 		StoreUser(ctx context.Context, login string, password string) (*entity.User, error)
 		FindUserByLogin(ctx context.Context, login string) (*entity.User, error)
 	}
-
 	PasswordsRepository interface {
 		UpdateByName(
 			ctx context.Context,
@@ -61,6 +60,9 @@ type (
 			bucket string,
 			name string,
 		) error
+	}
+	FileDeletingWorkerPool interface {
+		QueueWork(w *FileDeleteWork) error
 	}
 	JWTIssuer interface {
 		Issue(userID int, ttl time.Duration) (string, error)

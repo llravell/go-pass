@@ -13,9 +13,14 @@ import (
 	"github.com/llravell/go-pass/logger"
 	"github.com/llravell/go-pass/pkg/auth"
 	pb "github.com/llravell/go-pass/pkg/grpc"
+	"github.com/llravell/go-pass/pkg/workerpool"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"google.golang.org/grpc"
+)
+
+const (
+	fileDeletingWorkersAmount = 4
 )
 
 //nolint:funlen
@@ -57,10 +62,12 @@ func main() {
 	cardsRepository := repository.NewCardsPostgresRepository(db)
 	filesRepository := repository.NewFilesPostgresRepository(db)
 
+	fileDeletingWorkerPool := workerpool.New[*usecase.FileDeleteWork](fileDeletingWorkersAmount)
+
 	authUsecase := usecase.NewAuthUseCase(usersRepository, jwtManager)
 	passwordsUsecase := usecase.NewPasswordsUseCase(passwordsRepository)
 	cardsUsecase := usecase.NewCardsUseCase(cardsRepository)
-	filesUsecase := usecase.NewFilesUseCase(filesRepository, minioClient)
+	filesUsecase := usecase.NewFilesUseCase(filesRepository, minioClient, fileDeletingWorkerPool, &log)
 
 	authServer := server.NewAuthServer(authUsecase, &log)
 	passwordsServer := server.NewPasswordsServer(passwordsUsecase, &log)
@@ -83,6 +90,15 @@ func main() {
 	pb.RegisterPasswordsServer(srv, passwordsServer)
 	pb.RegisterCardsServer(srv, cardsServer)
 	pb.RegisterNotesServer(srv, notesServer)
+
+	fileDeletingWorkerPool.ProcessQueue()
+
+	defer func() {
+		fileDeletingWorkerPool.Close()
+
+		log.Info().Msg("file deleting worker pool closing...")
+		fileDeletingWorkerPool.Wait()
+	}()
 
 	log.Info().Msgf("server started on %s", cfg.Addr)
 

@@ -6,17 +6,27 @@ import (
 
 	"github.com/llravell/go-pass/internal/entity"
 	"github.com/minio/minio-go/v7"
+	"github.com/rs/zerolog"
 )
 
 type FilesUseCase struct {
-	repo        FilesRepository
-	minioClient *minio.Client
+	repo           FilesRepository
+	minioClient    *minio.Client
+	fileDeletingWP FileDeletingWorkerPool
+	log            *zerolog.Logger
 }
 
-func NewFilesUseCase(repo FilesRepository, minioClient *minio.Client) *FilesUseCase {
+func NewFilesUseCase(
+	repo FilesRepository,
+	minioClient *minio.Client,
+	fileDeletingWP FileDeletingWorkerPool,
+	log *zerolog.Logger,
+) *FilesUseCase {
 	return &FilesUseCase{
-		repo:        repo,
-		minioClient: minioClient,
+		repo:           repo,
+		minioClient:    minioClient,
+		fileDeletingWP: fileDeletingWP,
+		log:            log,
 	}
 }
 
@@ -77,6 +87,15 @@ func (uc *FilesUseCase) DeleteFile(
 	name string,
 ) error {
 	err := uc.repo.DeleteFileByName(ctx, userID, bucket, name)
+	if err != nil {
+		return err
+	}
+
+	err = uc.fileDeletingWP.QueueWork(&FileDeleteWork{
+		file:        &entity.File{Name: name, MinioBucket: bucket},
+		minioClient: uc.minioClient,
+		log:         uc.log,
+	})
 	if err != nil {
 		return err
 	}
