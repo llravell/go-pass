@@ -1,6 +1,9 @@
 package encryption_test
 
 import (
+	"bytes"
+	"io"
+	"strings"
 	"testing"
 
 	"github.com/llravell/go-pass/pkg/encryption"
@@ -35,5 +38,23 @@ func TestEncryption(t *testing.T) {
 		require.NoError(t, err)
 
 		assert.Equal(t, text, decrypted)
+	})
+
+	t.Run("encrypt with reader and decrypt with writer", func(t *testing.T) {
+		text := "some plain text"
+		resultBuf := &bytes.Buffer{}
+		key := encryption.GenerateKeyFromMasterPass(masterPassword)
+
+		reader, err := encryption.NewEncryptReader(key, strings.NewReader(text))
+		writer := encryption.NewDecryptWriter(key, resultBuf)
+		require.NoError(t, err)
+
+		encrypted, err := io.ReadAll(reader)
+		require.NoError(t, err)
+
+		_, err = writer.Write(encrypted)
+		require.NoError(t, err)
+
+		assert.Equal(t, text, resultBuf.String())
 	})
 }
