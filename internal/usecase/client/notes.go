@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"os"
 
 	"github.com/llravell/go-pass/internal/entity"
 	pb "github.com/llravell/go-pass/pkg/grpc"
@@ -26,7 +25,7 @@ func NewNotesUseCase(
 func (uc *NotesUseCase) UploadNote(
 	ctx context.Context,
 	name, meta string,
-	file *os.File,
+	reader io.Reader,
 ) error {
 	stream, err := uc.notesClient.Upload(ctx)
 	if err != nil {
@@ -37,7 +36,7 @@ func (uc *NotesUseCase) UploadNote(
 	isFirstChunk := true
 
 	for {
-		n, err := file.Read(buffer)
+		n, err := reader.Read(buffer)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				break
@@ -76,7 +75,7 @@ func (uc *NotesUseCase) UploadNote(
 func (uc *NotesUseCase) DownloadNote(
 	ctx context.Context,
 	name string,
-	file *os.File,
+	writer io.Writer,
 ) error {
 	stream, err := uc.notesClient.Download(ctx, &pb.NotesDownloadRequest{Name: name})
 	if err != nil {
@@ -95,7 +94,7 @@ func (uc *NotesUseCase) DownloadNote(
 
 		data := chunk.GetData()
 
-		_, err = file.Write(data)
+		_, err = writer.Write(data)
 		if err != nil {
 			return err
 		}

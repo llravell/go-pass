@@ -4,26 +4,34 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
+	"github.com/llravell/go-pass/cmd/client/components"
 	"github.com/llravell/go-pass/internal/entity"
+	"github.com/llravell/go-pass/pkg/encryption"
 	"github.com/urfave/cli/v3"
 )
 
 type NotesUseCase interface {
-	UploadNote(ctx context.Context, name, meta string, file *os.File) error
-	DownloadNote(ctx context.Context, name string, file *os.File) error
+	UploadNote(ctx context.Context, name, meta string, reader io.Reader) error
+	DownloadNote(ctx context.Context, name string, writer io.Writer) error
 	GetNotes(ctx context.Context) ([]*entity.File, error)
 }
 
 type NotesCommands struct {
-	notesUC NotesUseCase
+	notesUC     NotesUseCase
+	keyProvider *components.EncryptionKeyProvider
 }
 
-func NewNotesCommands(notesUC NotesUseCase) *NotesCommands {
+func NewNotesCommands(
+	notesUC NotesUseCase,
+	keyProvider *components.EncryptionKeyProvider,
+) *NotesCommands {
 	return &NotesCommands{
-		notesUC: notesUC,
+		notesUC:     notesUC,
+		keyProvider: keyProvider,
 	}
 }
 
@@ -52,11 +60,21 @@ func (commands *NotesCommands) Upload() *cli.Command {
 
 			defer file.Close()
 
+			key, err := commands.keyProvider.Get(ctx)
+			if err != nil {
+				return err
+			}
+
+			encryptReader, err := encryption.NewEncryptReader(key, file)
+			if err != nil {
+				return err
+			}
+
 			if _, err = cmd.Writer.Write([]byte("start uploading...\n")); err != nil {
 				return err
 			}
 
-			err = commands.notesUC.UploadNote(ctx, name, meta, file)
+			err = commands.notesUC.UploadNote(ctx, name, meta, encryptReader)
 			if err != nil {
 				return err
 			}
@@ -88,11 +106,18 @@ func (commands *NotesCommands) Download() *cli.Command {
 
 			defer file.Close()
 
+			key, err := commands.keyProvider.Get(ctx)
+			if err != nil {
+				return err
+			}
+
+			decryptWriter := encryption.NewDecryptWriter(key, file)
+
 			if _, err = cmd.Writer.Write([]byte("start downloading...\n")); err != nil {
 				return err
 			}
 
-			err = commands.notesUC.DownloadNote(ctx, name, file)
+			err = commands.notesUC.DownloadNote(ctx, name, decryptWriter)
 			if err != nil {
 				return err
 			}

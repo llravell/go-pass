@@ -90,7 +90,7 @@ func buildCmd(db *sql.DB) *cli.Command {
 	encryptionKeyProvider := components.NewEncryptionKeyProvider(authUseCase)
 	authCommands := commands.NewAuthCommands(authUseCase)
 	passwordsCommands := commands.NewPasswordsCommands(passwordsUseCase, encryptionKeyProvider)
-	notesCommands := commands.NewNotesCommands(notesUseCase)
+	notesCommands := commands.NewNotesCommands(notesUseCase, encryptionKeyProvider)
 
 	return &cli.Command{
 		Name: "GOPASS",

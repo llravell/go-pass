@@ -26,7 +26,7 @@ func (pass *Password) BumpVersion() {
 }
 
 func (pass *Password) Open(key *encryption.Key) error {
-	decryptedValue, err := key.Decrypt(pass.Value)
+	decryptedValue, err := encryption.DecryptString(key, pass.Value)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func (pass *Password) Open(key *encryption.Key) error {
 }
 
 func (pass *Password) Close(key *encryption.Key) error {
-	encryptedValue, err := key.Encrypt(pass.Value)
+	encryptedValue, err := encryption.EncryptString(key, pass.Value)
 	if err != nil {
 		return err
 	}

@@ -32,12 +32,12 @@ func (card *Card) BumpVersion() {
 }
 
 func (card *Card) Open(key *encryption.Key) error {
-	decryptedNumber, err := key.Decrypt(card.Number)
+	decryptedNumber, err := encryption.DecryptString(key, card.Number)
 	if err != nil {
 		return err
 	}
 
-	decryptedCVV, err := key.Decrypt(card.CVV)
+	decryptedCVV, err := encryption.DecryptString(key, card.CVV)
 	if err != nil {
 		return err
 	}
@@ -49,12 +49,12 @@ func (card *Card) Open(key *encryption.Key) error {
 }
 
 func (card *Card) Close(key *encryption.Key) error {
-	encryptedNumber, err := key.Encrypt(card.Number)
+	encryptedNumber, err := encryption.EncryptString(key, card.Number)
 	if err != nil {
 		return err
 	}
 
-	encryptedCVV, err := key.Encrypt(card.CVV)
+	encryptedCVV, err := encryption.EncryptString(key, card.CVV)
 	if err != nil {
 		return err
 	}
