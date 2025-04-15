@@ -18,6 +18,7 @@ type NotesUseCase interface {
 	UploadNote(ctx context.Context, name, meta string, reader io.Reader) error
 	DownloadNote(ctx context.Context, name string, writer io.Writer) error
 	GetNotes(ctx context.Context) ([]*entity.File, error)
+	DeleteNote(ctx context.Context, name string) error
 }
 
 type NotesCommands struct {
@@ -156,6 +157,30 @@ func (commands *NotesCommands) List() *cli.Command {
 			}
 
 			return writter.Flush()
+		},
+	}
+}
+
+func (commands *NotesCommands) Delete() *cli.Command {
+	return &cli.Command{
+		Name: "delete",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			name := strings.TrimSpace(cmd.Args().Get(0))
+			if len(name) == 0 {
+				return cli.Exit("got empty name", 1)
+			}
+
+			err := commands.notesUC.DeleteNote(ctx, name)
+			if err != nil {
+				return err
+			}
+
+			_, err = fmt.Fprintf(cmd.Writer, "note \"%s\" has been deleted\n", name)
+			if err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 }

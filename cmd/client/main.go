@@ -118,6 +118,7 @@ func buildCmd(db *sql.DB) *cli.Command {
 				Name: "notes",
 				Commands: []*cli.Command{
 					notesCommands.List(),
+					notesCommands.Delete(),
 					notesCommands.Upload(),
 					notesCommands.Download(),
 				},

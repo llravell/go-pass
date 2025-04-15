@@ -123,3 +123,15 @@ func (uc *NotesUseCase) GetNotes(
 
 	return notes, nil
 }
+
+func (uc *NotesUseCase) DeleteNote(
+	ctx context.Context,
+	name string,
+) error {
+	_, err := uc.notesClient.Delete(ctx, &pb.NotesDeleteRequest{Name: name})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
