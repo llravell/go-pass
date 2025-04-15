@@ -61,7 +61,7 @@ func (repo *FilesPostgresRepository) UploadFile(
 		_, err = tx.ExecContext(ctx, `
 			UPDATE files
 			SET upload_status='done', size=$1, meta=$2
-			WHERE user_id=$3 AND minio_bucket=$4 AND name=$5
+			WHERE user_id=$3 AND minio_bucket=$4 AND name=$5;
     `, fileSize, file.Meta, userID, file.MinioBucket, file.Name)
 		if err != nil {
 			return err
@@ -91,6 +91,24 @@ func (repo *FilesPostgresRepository) GetFileByName(
 	}
 
 	return &file, nil
+}
+
+func (repo *FilesPostgresRepository) DeleteFileByName(
+	ctx context.Context,
+	userID int,
+	bucket string,
+	name string,
+) error {
+	_, err := repo.conn.ExecContext(ctx, `
+		UPDATE files
+		SET is_deleted=TRUE
+		WHERE user_id=$1 AND minio_bucket=$2 AND name=$3 AND upload_status='done';
+	`, userID, bucket, name)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (repo *FilesPostgresRepository) GetFiles(

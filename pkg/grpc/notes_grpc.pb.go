@@ -23,6 +23,7 @@ const (
 	Notes_GetList_FullMethodName  = "/api.notes.Notes/GetList"
 	Notes_Upload_FullMethodName   = "/api.notes.Notes/Upload"
 	Notes_Download_FullMethodName = "/api.notes.Notes/Download"
+	Notes_Delete_FullMethodName   = "/api.notes.Notes/Delete"
 )
 
 // NotesClient is the client API for Notes service.
@@ -32,6 +33,7 @@ type NotesClient interface {
 	GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NotesGetListResponse, error)
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileChunk, NotesUploadResponse], error)
 	Download(ctx context.Context, in *NotesDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error)
+	Delete(ctx context.Context, in *NotesDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type notesClient struct {
@@ -84,6 +86,16 @@ func (c *notesClient) Download(ctx context.Context, in *NotesDownloadRequest, op
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Notes_DownloadClient = grpc.ServerStreamingClient[FileChunk]
 
+func (c *notesClient) Delete(ctx context.Context, in *NotesDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, Notes_Delete_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // NotesServer is the server API for Notes service.
 // All implementations must embed UnimplementedNotesServer
 // for forward compatibility.
@@ -91,6 +103,7 @@ type NotesServer interface {
 	GetList(context.Context, *emptypb.Empty) (*NotesGetListResponse, error)
 	Upload(grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]) error
 	Download(*NotesDownloadRequest, grpc.ServerStreamingServer[FileChunk]) error
+	Delete(context.Context, *NotesDeleteRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedNotesServer()
 }
 
@@ -109,6 +122,9 @@ func (UnimplementedNotesServer) Upload(grpc.ClientStreamingServer[FileChunk, Not
 }
 func (UnimplementedNotesServer) Download(*NotesDownloadRequest, grpc.ServerStreamingServer[FileChunk]) error {
 	return status.Errorf(codes.Unimplemented, "method Download not implemented")
+}
+func (UnimplementedNotesServer) Delete(context.Context, *NotesDeleteRequest) (*emptypb.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedNotesServer) mustEmbedUnimplementedNotesServer() {}
 func (UnimplementedNotesServer) testEmbeddedByValue()               {}
@@ -167,6 +183,24 @@ func _Notes_Download_Handler(srv interface{}, stream grpc.ServerStream) error {
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type Notes_DownloadServer = grpc.ServerStreamingServer[FileChunk]
 
+func _Notes_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NotesDeleteRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(NotesServer).Delete(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Notes_Delete_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(NotesServer).Delete(ctx, req.(*NotesDeleteRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Notes_ServiceDesc is the grpc.ServiceDesc for Notes service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -177,6 +211,10 @@ var Notes_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetList",
 			Handler:    _Notes_GetList_Handler,
+		},
+		{
+			MethodName: "Delete",
+			Handler:    _Notes_Delete_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

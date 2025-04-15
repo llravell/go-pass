@@ -55,6 +55,12 @@ type (
 			userID int,
 			bucket string,
 		) ([]*entity.File, error)
+		DeleteFileByName(
+			ctx context.Context,
+			userID int,
+			bucket string,
+			name string,
+		) error
 	}
 	JWTIssuer interface {
 		Issue(userID int, ttl time.Duration) (string, error)

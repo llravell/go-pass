@@ -45,8 +45,9 @@ func TestEncryption(t *testing.T) {
 		resultBuf := &bytes.Buffer{}
 		key := encryption.GenerateKeyFromMasterPass(masterPassword)
 
-		reader, err := encryption.NewEncryptReader(key, strings.NewReader(text))
 		writer := encryption.NewDecryptWriter(key, resultBuf)
+
+		reader, err := encryption.NewEncryptReader(key, strings.NewReader(text))
 		require.NoError(t, err)
 
 		encrypted, err := io.ReadAll(reader)

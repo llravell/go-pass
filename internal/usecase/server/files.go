@@ -69,3 +69,17 @@ func (uc *FilesUseCase) GetFiles(
 ) ([]*entity.File, error) {
 	return uc.repo.GetFiles(ctx, userID, bucket)
 }
+
+func (uc *FilesUseCase) DeleteFile(
+	ctx context.Context,
+	userID int,
+	bucket string,
+	name string,
+) error {
+	err := uc.repo.DeleteFileByName(ctx, userID, bucket, name)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

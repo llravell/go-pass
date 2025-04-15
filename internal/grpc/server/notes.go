@@ -159,3 +159,21 @@ func (s *NotesServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.NotesG
 
 	return response, nil
 }
+
+func (s *NotesServer) Delete(ctx context.Context, in *pb.NotesDeleteRequest) (*emptypb.Empty, error) {
+	userID, ok := GetUserIDFromContext(ctx)
+	if !ok {
+		s.log.Error().Msg("getting userID from ctx failed")
+
+		return nil, status.Error(codes.Unauthenticated, "failed to resolve user id")
+	}
+
+	err := s.filesUC.DeleteFile(ctx, userID, notesMinioBucket, in.GetName())
+	if err != nil {
+		s.log.Error().Err(err).Msg("deleting note failed")
+
+		return nil, status.Error(codes.Internal, "deleting note failed")
+	}
+
+	return &emptypb.Empty{}, nil
+}

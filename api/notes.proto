@@ -11,6 +11,7 @@ service Notes {
   rpc GetList(google.protobuf.Empty) returns (NotesGetListResponse);
   rpc Upload(stream file.FileChunk) returns (NotesUploadResponse);
   rpc Download(NotesDownloadRequest) returns (stream file.FileChunk);
+  rpc Delete(NotesDeleteRequest) returns (google.protobuf.Empty);
 }
 
 message NotesGetListResponse {
@@ -22,5 +23,9 @@ message NotesUploadResponse {
 }
 
 message NotesDownloadRequest {
+  string name = 1;
+}
+
+message NotesDeleteRequest {
   string name = 1;
 }
