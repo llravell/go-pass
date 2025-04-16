@@ -5,6 +5,7 @@ CREATE TABLE passwords (
   name TEXT NOT NULL UNIQUE,
   encrypted_pass TEXT NOT NULL,
   meta TEXT,
+  is_deleted boolean DEFAULT FALSE,
   version INTEGER DEFAULT 0
 );
 -- +goose StatementEnd

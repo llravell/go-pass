@@ -2,16 +2,22 @@ package server_test
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"testing"
 
+	"github.com/llravell/go-pass/internal/grpc/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/test/bufconn"
 )
+
+var errBoom = errors.New("boom")
+
+const defaultUserID = 1
 
 const bufSize = 1024 * 1024
 
@@ -56,4 +62,15 @@ func startGRPCEchoServer(
 	}
 
 	return pb.NewEchoClient(conn), closeFn
+}
+
+func fakeAuthInterceptor(
+	ctx context.Context,
+	req any,
+	_ *grpc.UnaryServerInfo,
+	handler grpc.UnaryHandler,
+) (any, error) {
+	ctx = context.WithValue(ctx, server.UserIDContextKey, defaultUserID)
+
+	return handler(ctx, req)
 }

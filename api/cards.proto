@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "api/conflict.proto";
+package api.cards;
+
+option go_package = "pkg/grpc";
+
+service Cards {
+  rpc Sync(Card) returns (CardSyncResponse);
+  rpc Delete(CardDeleteRequest) returns (google.protobuf.Empty);
+  rpc GetList(google.protobuf.Empty) returns (CardGetListResponse);
+}
+
+message Card {
+  string name = 1;
+  string cardholder_name = 2;
+  string number = 3;
+  string cvv = 4;
+  google.protobuf.Timestamp expiration_date = 5;
+  string meta = 6;
+  int32 version = 7;
+}
+
+message CardConflict {
+  conflict.ConflictType type = 1;
+  Card card = 2;
+}
+
+message CardSyncResponse {
+  bool success = 1;
+  optional CardConflict conflict = 2;
+}
+
+message CardDeleteRequest {
+  string name = 1;
+}
+
+message CardGetListResponse {
+  repeated Card cards = 1;
+}

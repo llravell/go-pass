@@ -4,21 +4,25 @@ import (
 	"context"
 	"strings"
 
-	usecase "github.com/llravell/go-pass/internal/usecase/client"
 	"github.com/urfave/cli/v3"
 )
 
-type AuthCommands struct {
-	authUC *usecase.AuthUseCase
+type AuthUseCase interface {
+	Register(ctx context.Context, login, password string) error
+	Login(ctx context.Context, login, password string) error
 }
 
-func NewAuthCommands(authUC *usecase.AuthUseCase) *AuthCommands {
+type AuthCommands struct {
+	authUC AuthUseCase
+}
+
+func NewAuthCommands(authUC AuthUseCase) *AuthCommands {
 	return &AuthCommands{
 		authUC: authUC,
 	}
 }
 
-func (auth *AuthCommands) Register() *cli.Command {
+func (commands *AuthCommands) Register() *cli.Command {
 	return &cli.Command{
 		Name: "register",
 		Flags: []cli.Flag{
@@ -37,7 +41,7 @@ func (auth *AuthCommands) Register() *cli.Command {
 			login := strings.TrimSpace(c.String("login"))
 			password := strings.TrimSpace(c.String("password"))
 
-			err := auth.authUC.Register(ctx, login, password)
+			err := commands.authUC.Register(ctx, login, password)
 			if err != nil {
 				return cli.Exit(err, 1)
 			}
@@ -47,7 +51,7 @@ func (auth *AuthCommands) Register() *cli.Command {
 	}
 }
 
-func (auth *AuthCommands) Login() *cli.Command {
+func (commands *AuthCommands) Login() *cli.Command {
 	return &cli.Command{
 		Name: "login",
 		Flags: []cli.Flag{
@@ -66,7 +70,7 @@ func (auth *AuthCommands) Login() *cli.Command {
 			login := strings.TrimSpace(c.String("login"))
 			password := strings.TrimSpace(c.String("password"))
 
-			err := auth.authUC.Login(ctx, login, password)
+			err := commands.authUC.Login(ctx, login, password)
 			if err != nil {
 				return cli.Exit(err, 1)
 			}

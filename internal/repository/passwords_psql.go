@@ -97,7 +97,7 @@ func (repo *PasswordsPostgresRepository) UpdateByName(
 	name string,
 	updateFn func(password *entity.Password) (*entity.Password, error),
 ) error {
-	return runInTx(repo.conn, func(tx *sql.Tx) error {
+	return runInTx(ctx, repo.conn, func(tx *sql.Tx) error {
 		var pass entity.Password
 
 		row := tx.QueryRowContext(ctx, `
