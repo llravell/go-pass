@@ -11,6 +11,7 @@ import (
 const (
 	loginKey      = "login"
 	masterPassKey = "master_password"
+	authTokenKey  = "auth_token"
 )
 
 type SessionSqliteRepository struct {
@@ -29,13 +30,22 @@ func (repo *SessionSqliteRepository) GetSession(
 	var session entity.ClientSession
 
 	loginRow := repo.conn.QueryRowContext(ctx, "SELECT value FROM session WHERE key=?", loginKey)
+
 	err := loginRow.Scan(&session.Login)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 
 	passRow := repo.conn.QueryRowContext(ctx, "SELECT value FROM session WHERE key=?", masterPassKey)
+
 	err = passRow.Scan(&session.MasterPassHash)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return nil, err
+	}
+
+	authTokenRow := repo.conn.QueryRowContext(ctx, "SELECT value FROM session WHERE key=?", authTokenKey)
+
+	err = authTokenRow.Scan(&session.AuthToken)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
@@ -51,8 +61,13 @@ func (repo *SessionSqliteRepository) SetSession(
 		INSERT OR REPLACE INTO session (key, value)
 		VALUES
 			(?, ?),
+			(?, ?),
 			(?, ?);
-	`, loginKey, session.Login, masterPassKey, session.MasterPassHash)
+	`,
+		loginKey, session.Login,
+		masterPassKey, session.MasterPassHash,
+		authTokenKey, session.AuthToken,
+	)
 
 	return err
 }
