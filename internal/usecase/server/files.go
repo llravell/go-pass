@@ -5,26 +5,25 @@ import (
 	"io"
 
 	"github.com/llravell/go-pass/internal/entity"
-	"github.com/minio/minio-go/v7"
 	"github.com/rs/zerolog"
 )
 
 type FilesUseCase struct {
 	repo           FilesRepository
-	minioClient    *minio.Client
+	s3Storage      FilesS3Storage
 	fileDeletingWP FileDeletingWorkerPool
 	log            *zerolog.Logger
 }
 
 func NewFilesUseCase(
 	repo FilesRepository,
-	minioClient *minio.Client,
+	s3Storage FilesS3Storage,
 	fileDeletingWP FileDeletingWorkerPool,
 	log *zerolog.Logger,
 ) *FilesUseCase {
 	return &FilesUseCase{
 		repo:           repo,
-		minioClient:    minioClient,
+		s3Storage:      s3Storage,
 		fileDeletingWP: fileDeletingWP,
 		log:            log,
 	}
@@ -37,19 +36,7 @@ func (uc *FilesUseCase) UploadFile(
 	fileReader io.Reader,
 ) error {
 	return uc.repo.UploadFile(ctx, userID, file, func() (int64, error) {
-		info, err := uc.minioClient.PutObject(
-			ctx,
-			file.MinioBucket,
-			file.Name,
-			fileReader,
-			int64(-1),
-			minio.PutObjectOptions{},
-		)
-		if err != nil {
-			return 0, err
-		}
-
-		return info.Size, nil
+		return uc.s3Storage.UploadFile(ctx, file, fileReader)
 	})
 }
 
@@ -64,12 +51,7 @@ func (uc *FilesUseCase) DownloadFile(
 		return nil, err
 	}
 
-	obj, err := uc.minioClient.GetObject(ctx, file.MinioBucket, file.Name, minio.GetObjectOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	return obj, nil
+	return uc.s3Storage.DownloadFile(ctx, file)
 }
 
 func (uc *FilesUseCase) GetFiles(
@@ -92,9 +74,9 @@ func (uc *FilesUseCase) DeleteFile(
 	}
 
 	err = uc.fileDeletingWP.QueueWork(&FileDeleteWork{
-		file:        &entity.File{Name: name, MinioBucket: bucket},
-		minioClient: uc.minioClient,
-		log:         uc.log,
+		file:      &entity.File{Name: name, MinioBucket: bucket},
+		s3Storage: uc.s3Storage,
+		log:       uc.log,
 	})
 	if err != nil {
 		return err

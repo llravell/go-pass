@@ -3,10 +3,13 @@ package server_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"testing"
 
+	middleware "github.com/grpc-ecosystem/go-grpc-middleware/v2"
+	"github.com/llravell/go-pass/internal/entity"
 	"github.com/llravell/go-pass/internal/grpc/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/stretchr/testify/require"
@@ -20,6 +23,32 @@ var errBoom = errors.New("boom")
 const defaultUserID = 1
 
 const bufSize = 1024 * 1024
+
+type fileMatcher struct {
+	name   string
+	bucket string
+}
+
+//nolint:unparam
+func newFileMatcher(name, bucket string) *fileMatcher {
+	return &fileMatcher{
+		name:   name,
+		bucket: bucket,
+	}
+}
+
+func (m *fileMatcher) Matches(x any) bool {
+	file, ok := x.(*entity.File)
+	if !ok {
+		return false
+	}
+
+	return file.Name == m.name && file.MinioBucket == m.bucket
+}
+
+func (m *fileMatcher) String() string {
+	return fmt.Sprintf("match that file has name=\"%s\" and bucket=\"%s\"", m.name, m.bucket)
+}
 
 type echoServer struct {
 	pb.UnimplementedEchoServer
@@ -73,4 +102,18 @@ func fakeAuthInterceptor(
 	ctx = context.WithValue(ctx, server.UserIDContextKey, defaultUserID)
 
 	return handler(ctx, req)
+}
+
+func fakeAuthStreamInterceptor(
+	srv any,
+	ss grpc.ServerStream,
+	_ *grpc.StreamServerInfo,
+	handler grpc.StreamHandler,
+) error {
+	ctx := context.WithValue(ss.Context(), server.UserIDContextKey, defaultUserID)
+
+	wrapped := middleware.WrapServerStream(ss)
+	wrapped.WrappedContext = ctx
+
+	return handler(srv, wrapped)
 }

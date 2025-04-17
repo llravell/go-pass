@@ -11,10 +11,12 @@ package mocks
 
 import (
 	context "context"
+	io "io"
 	reflect "reflect"
 	time "time"
 
 	entity "github.com/llravell/go-pass/internal/entity"
+	server "github.com/llravell/go-pass/internal/usecase/server"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -232,6 +234,194 @@ func (m *MockCardsRepository) UpdateByName(ctx context.Context, userID int, name
 func (mr *MockCardsRepositoryMockRecorder) UpdateByName(ctx, userID, name, updateFn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateByName", reflect.TypeOf((*MockCardsRepository)(nil).UpdateByName), ctx, userID, name, updateFn)
+}
+
+// MockFilesRepository is a mock of FilesRepository interface.
+type MockFilesRepository struct {
+	ctrl     *gomock.Controller
+	recorder *MockFilesRepositoryMockRecorder
+	isgomock struct{}
+}
+
+// MockFilesRepositoryMockRecorder is the mock recorder for MockFilesRepository.
+type MockFilesRepositoryMockRecorder struct {
+	mock *MockFilesRepository
+}
+
+// NewMockFilesRepository creates a new mock instance.
+func NewMockFilesRepository(ctrl *gomock.Controller) *MockFilesRepository {
+	mock := &MockFilesRepository{ctrl: ctrl}
+	mock.recorder = &MockFilesRepositoryMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockFilesRepository) EXPECT() *MockFilesRepositoryMockRecorder {
+	return m.recorder
+}
+
+// DeleteFileByName mocks base method.
+func (m *MockFilesRepository) DeleteFileByName(ctx context.Context, userID int, bucket, name string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFileByName", ctx, userID, bucket, name)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFileByName indicates an expected call of DeleteFileByName.
+func (mr *MockFilesRepositoryMockRecorder) DeleteFileByName(ctx, userID, bucket, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFileByName", reflect.TypeOf((*MockFilesRepository)(nil).DeleteFileByName), ctx, userID, bucket, name)
+}
+
+// GetFileByName mocks base method.
+func (m *MockFilesRepository) GetFileByName(ctx context.Context, userID int, bucket, name string) (*entity.File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFileByName", ctx, userID, bucket, name)
+	ret0, _ := ret[0].(*entity.File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFileByName indicates an expected call of GetFileByName.
+func (mr *MockFilesRepositoryMockRecorder) GetFileByName(ctx, userID, bucket, name any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFileByName", reflect.TypeOf((*MockFilesRepository)(nil).GetFileByName), ctx, userID, bucket, name)
+}
+
+// GetFiles mocks base method.
+func (m *MockFilesRepository) GetFiles(ctx context.Context, userID int, bucket string) ([]*entity.File, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFiles", ctx, userID, bucket)
+	ret0, _ := ret[0].([]*entity.File)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFiles indicates an expected call of GetFiles.
+func (mr *MockFilesRepositoryMockRecorder) GetFiles(ctx, userID, bucket any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFiles", reflect.TypeOf((*MockFilesRepository)(nil).GetFiles), ctx, userID, bucket)
+}
+
+// UploadFile mocks base method.
+func (m *MockFilesRepository) UploadFile(ctx context.Context, userID int, file *entity.File, uploadFn func() (int64, error)) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UploadFile", ctx, userID, file, uploadFn)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UploadFile indicates an expected call of UploadFile.
+func (mr *MockFilesRepositoryMockRecorder) UploadFile(ctx, userID, file, uploadFn any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadFile", reflect.TypeOf((*MockFilesRepository)(nil).UploadFile), ctx, userID, file, uploadFn)
+}
+
+// MockFilesS3Storage is a mock of FilesS3Storage interface.
+type MockFilesS3Storage struct {
+	ctrl     *gomock.Controller
+	recorder *MockFilesS3StorageMockRecorder
+	isgomock struct{}
+}
+
+// MockFilesS3StorageMockRecorder is the mock recorder for MockFilesS3Storage.
+type MockFilesS3StorageMockRecorder struct {
+	mock *MockFilesS3Storage
+}
+
+// NewMockFilesS3Storage creates a new mock instance.
+func NewMockFilesS3Storage(ctrl *gomock.Controller) *MockFilesS3Storage {
+	mock := &MockFilesS3Storage{ctrl: ctrl}
+	mock.recorder = &MockFilesS3StorageMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockFilesS3Storage) EXPECT() *MockFilesS3StorageMockRecorder {
+	return m.recorder
+}
+
+// DeleteFile mocks base method.
+func (m *MockFilesS3Storage) DeleteFile(ctx context.Context, file *entity.File) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteFile", ctx, file)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteFile indicates an expected call of DeleteFile.
+func (mr *MockFilesS3StorageMockRecorder) DeleteFile(ctx, file any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteFile", reflect.TypeOf((*MockFilesS3Storage)(nil).DeleteFile), ctx, file)
+}
+
+// DownloadFile mocks base method.
+func (m *MockFilesS3Storage) DownloadFile(ctx context.Context, file *entity.File) (io.ReadCloser, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DownloadFile", ctx, file)
+	ret0, _ := ret[0].(io.ReadCloser)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DownloadFile indicates an expected call of DownloadFile.
+func (mr *MockFilesS3StorageMockRecorder) DownloadFile(ctx, file any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DownloadFile", reflect.TypeOf((*MockFilesS3Storage)(nil).DownloadFile), ctx, file)
+}
+
+// UploadFile mocks base method.
+func (m *MockFilesS3Storage) UploadFile(ctx context.Context, file *entity.File, fileReader io.Reader) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UploadFile", ctx, file, fileReader)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UploadFile indicates an expected call of UploadFile.
+func (mr *MockFilesS3StorageMockRecorder) UploadFile(ctx, file, fileReader any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadFile", reflect.TypeOf((*MockFilesS3Storage)(nil).UploadFile), ctx, file, fileReader)
+}
+
+// MockFileDeletingWorkerPool is a mock of FileDeletingWorkerPool interface.
+type MockFileDeletingWorkerPool struct {
+	ctrl     *gomock.Controller
+	recorder *MockFileDeletingWorkerPoolMockRecorder
+	isgomock struct{}
+}
+
+// MockFileDeletingWorkerPoolMockRecorder is the mock recorder for MockFileDeletingWorkerPool.
+type MockFileDeletingWorkerPoolMockRecorder struct {
+	mock *MockFileDeletingWorkerPool
+}
+
+// NewMockFileDeletingWorkerPool creates a new mock instance.
+func NewMockFileDeletingWorkerPool(ctrl *gomock.Controller) *MockFileDeletingWorkerPool {
+	mock := &MockFileDeletingWorkerPool{ctrl: ctrl}
+	mock.recorder = &MockFileDeletingWorkerPoolMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockFileDeletingWorkerPool) EXPECT() *MockFileDeletingWorkerPoolMockRecorder {
+	return m.recorder
+}
+
+// QueueWork mocks base method.
+func (m *MockFileDeletingWorkerPool) QueueWork(w *server.FileDeleteWork) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "QueueWork", w)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// QueueWork indicates an expected call of QueueWork.
+func (mr *MockFileDeletingWorkerPoolMockRecorder) QueueWork(w any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueueWork", reflect.TypeOf((*MockFileDeletingWorkerPool)(nil).QueueWork), w)
 }
 
 // MockJWTIssuer is a mock of JWTIssuer interface.

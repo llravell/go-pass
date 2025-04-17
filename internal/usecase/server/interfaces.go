@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/llravell/go-pass/internal/entity"
@@ -59,6 +60,21 @@ type (
 			userID int,
 			bucket string,
 			name string,
+		) error
+	}
+	FilesS3Storage interface {
+		UploadFile(
+			ctx context.Context,
+			file *entity.File,
+			fileReader io.Reader,
+		) (int64, error)
+		DownloadFile(
+			ctx context.Context,
+			file *entity.File,
+		) (io.ReadCloser, error)
+		DeleteFile(
+			ctx context.Context,
+			file *entity.File,
 		) error
 	}
 	FileDeletingWorkerPool interface {

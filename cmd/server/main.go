@@ -61,13 +61,14 @@ func main() {
 	passwordsRepository := repository.NewPasswordsPostgresRepository(db)
 	cardsRepository := repository.NewCardsPostgresRepository(db)
 	filesRepository := repository.NewFilesPostgresRepository(db)
+	filesS3Storage := repository.NewFilesMinioStorage(minioClient)
 
 	fileDeletingWorkerPool := workerpool.New[*usecase.FileDeleteWork](fileDeletingWorkersAmount)
 
 	authUsecase := usecase.NewAuthUseCase(usersRepository, jwtManager)
 	passwordsUsecase := usecase.NewPasswordsUseCase(passwordsRepository)
 	cardsUsecase := usecase.NewCardsUseCase(cardsRepository)
-	filesUsecase := usecase.NewFilesUseCase(filesRepository, minioClient, fileDeletingWorkerPool, &log)
+	filesUsecase := usecase.NewFilesUseCase(filesRepository, filesS3Storage, fileDeletingWorkerPool, &log)
 
 	authServer := server.NewAuthServer(authUsecase, &log)
 	passwordsServer := server.NewPasswordsServer(passwordsUsecase, &log)
