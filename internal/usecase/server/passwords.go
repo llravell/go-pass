@@ -50,7 +50,7 @@ func (uc *PasswordsUseCase) SyncPassword(
 		userID,
 		password.Name,
 		func(actualPassword *entity.Password) (*entity.Password, error) {
-			return entity.ChooseMostActuralEntity[entity.Password](actualPassword, password)
+			return entity.ChooseMostActualEntity(actualPassword, password)
 		},
 	)
 	if err != nil {

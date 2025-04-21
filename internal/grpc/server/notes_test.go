@@ -94,7 +94,7 @@ func TestNotesServer_Upload(t *testing.T) {
 
 	t.Run("upload file", func(t *testing.T) {
 		filesRepo.EXPECT().
-			UploadFile(gomock.Any(), defaultUserID, newFileMatcher("test", "notes"), gomock.Any()).
+			UploadFile(gomock.Any(), defaultUserID, newFileMatcher("test", "notes"), gomock.Any(), gomock.Any()).
 			Return(nil)
 
 		stream, err := client.Upload(t.Context())
@@ -114,7 +114,7 @@ func TestNotesServer_Upload(t *testing.T) {
 
 	t.Run("uploading file error", func(t *testing.T) {
 		filesRepo.EXPECT().
-			UploadFile(gomock.Any(), defaultUserID, newFileMatcher("test", "notes"), gomock.Any()).
+			UploadFile(gomock.Any(), defaultUserID, newFileMatcher("test", "notes"), gomock.Any(), gomock.Any()).
 			Return(errBoom)
 
 		stream, err := client.Upload(t.Context())

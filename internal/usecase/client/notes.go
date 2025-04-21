@@ -106,7 +106,7 @@ func (uc *NotesUseCase) DownloadNote(
 func (uc *NotesUseCase) GetNotes(
 	ctx context.Context,
 ) ([]*entity.File, error) {
-	response, err := uc.notesClient.GetList(ctx, &emptypb.Empty{})
+	response, err := uc.notesClient.List(ctx, &emptypb.Empty{})
 	if err != nil {
 		return nil, err
 	}

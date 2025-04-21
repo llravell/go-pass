@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/llravell/go-pass/internal/entity"
-	usecase "github.com/llravell/go-pass/internal/usecase/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
@@ -13,15 +12,32 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
+type CardsUseCase interface {
+	SyncCard(
+		ctx context.Context,
+		userID int,
+		card *entity.Card,
+	) error
+	GetCards(
+		ctx context.Context,
+		userID int,
+	) ([]*entity.Card, error)
+	DeleteCardByName(
+		ctx context.Context,
+		userID int,
+		name string,
+	) error
+}
+
 type CardsServer struct {
 	pb.UnimplementedCardsServer
 
-	cardsUC *usecase.CardsUseCase
+	cardsUC CardsUseCase
 	log     *zerolog.Logger
 }
 
 func NewCardsServer(
-	cardsUC *usecase.CardsUseCase,
+	cardsUC CardsUseCase,
 	log *zerolog.Logger,
 ) *CardsServer {
 	return &CardsServer{
@@ -82,7 +98,7 @@ func (s *CardsServer) Delete(ctx context.Context, in *pb.CardDeleteRequest) (*em
 	return &emptypb.Empty{}, nil
 }
 
-func (s *CardsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.CardGetListResponse, error) {
+func (s *CardsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.CardListResponse, error) {
 	userID, ok := GetUserIDFromContext(ctx)
 	if !ok {
 		s.log.Error().Msg("getting userID from ctx failed")
@@ -97,7 +113,7 @@ func (s *CardsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.CardGe
 		return nil, status.Error(codes.Internal, "cards fetching failed")
 	}
 
-	response := &pb.CardGetListResponse{
+	response := &pb.CardListResponse{
 		Cards: make([]*pb.Card, 0, len(Cards)),
 	}
 

@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/llravell/go-pass/internal/entity"
-	usecase "github.com/llravell/go-pass/internal/usecase/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
@@ -13,15 +12,32 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
+type PasswordsUseCase interface {
+	SyncPassword(
+		ctx context.Context,
+		userID int,
+		password *entity.Password,
+	) error
+	DeletePasswordByName(
+		ctx context.Context,
+		userID int,
+		name string,
+	) error
+	GetPasswords(
+		ctx context.Context,
+		userID int,
+	) ([]*entity.Password, error)
+}
+
 type PasswordsServer struct {
 	pb.UnimplementedPasswordsServer
 
-	passwordsUC *usecase.PasswordsUseCase
+	passwordsUC PasswordsUseCase
 	log         *zerolog.Logger
 }
 
 func NewPasswordsServer(
-	passwordsUC *usecase.PasswordsUseCase,
+	passwordsUC PasswordsUseCase,
 	log *zerolog.Logger,
 ) *PasswordsServer {
 	return &PasswordsServer{
@@ -82,7 +98,7 @@ func (s *PasswordsServer) Delete(ctx context.Context, in *pb.PasswordDeleteReque
 	return &emptypb.Empty{}, nil
 }
 
-func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.PasswordGetListResponse, error) {
+func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.PasswordListResponse, error) {
 	userID, ok := GetUserIDFromContext(ctx)
 	if !ok {
 		s.log.Error().Msg("getting userID from ctx failed")
@@ -97,7 +113,7 @@ func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.Pa
 		return nil, status.Error(codes.Internal, "passwords fetching failed")
 	}
 
-	response := &pb.PasswordGetListResponse{
+	response := &pb.PasswordListResponse{
 		Passwords: make([]*pb.Password, 0, len(passwords)),
 	}
 

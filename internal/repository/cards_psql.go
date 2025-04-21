@@ -50,10 +50,6 @@ func (repo *CardsPostgresRepository) GetCards(
 	}
 
 	if err = rows.Err(); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return cards, nil
-		}
-
 		return nil, err
 	}
 
@@ -102,17 +98,20 @@ func (repo *CardsPostgresRepository) UpdateByName(
 	updateFn func(Card *entity.Card) (*entity.Card, error),
 ) error {
 	return runInTx(ctx, repo.conn, func(tx *sql.Tx) error {
-		var card entity.Card
+		var (
+			card   entity.Card
+			cardID int
+		)
 
 		row := tx.QueryRowContext(ctx, `
-			SELECT name, cardholder_name, number_encrypted, cvv_encrypted, expiration_date, meta, version, is_deleted
+			SELECT id, name, cardholder_name, number_encrypted, cvv_encrypted, expiration_date, meta, version, is_deleted
 			FROM Cards
 			WHERE user_id=$1 AND name=$2
 			FOR UPDATE;
 		`, userID, name)
 
 		err := row.Scan(
-			&card.Name, &card.CardholderName, &card.Number, &card.CVV,
+			&cardID, &card.Name, &card.CardholderName, &card.Number, &card.CVV,
 			&card.ExpirationDate, &card.Meta, &card.Version, &card.Deleted,
 		)
 		if err != nil {
@@ -135,9 +134,9 @@ func (repo *CardsPostgresRepository) UpdateByName(
 		_, err = tx.ExecContext(ctx, `
 			UPDATE Cards
 			SET cardholder_name=$1, number_encrypted=$2, cvv_encrypted=$3, expiration_date=$4, meta=$5, version=$6, is_deleted=$7
-			WHERE user_id=$7 AND name=$8;
+			WHERE id=$7;
 		`, updatedCard.CardholderName, updatedCard.Number, updatedCard.CVV, updatedCard.ExpirationDate,
-			updatedCard.Meta, updatedCard.Version, updatedCard.Deleted, userID, card.Name,
+			updatedCard.Meta, updatedCard.Version, updatedCard.Deleted, cardID,
 		)
 		if err != nil {
 			return err

@@ -50,7 +50,7 @@ func (uc *CardsUseCase) SyncCard(
 		userID,
 		card.Name,
 		func(actualCard *entity.Card) (*entity.Card, error) {
-			return entity.ChooseMostActuralEntity(actualCard, card)
+			return entity.ChooseMostActualEntity(actualCard, card)
 		},
 	)
 	if err != nil {

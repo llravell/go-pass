@@ -16,7 +16,7 @@ type SyncEntityPointer[T any] interface {
 	SyncEntity
 }
 
-func ChooseMostActuralEntity[T any, PT SyncEntityPointer[T]](current, incoming PT) (PT, *ConflictError[PT]) {
+func ChooseMostActualEntity[T any, PT SyncEntityPointer[T]](current, incoming PT) (PT, *ConflictError[PT]) {
 	if current.IsDeleted() {
 		if incoming.GetVersion() > current.GetVersion() {
 			return incoming, nil

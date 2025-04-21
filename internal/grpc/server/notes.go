@@ -6,7 +6,6 @@ import (
 	"io"
 
 	"github.com/llravell/go-pass/internal/entity"
-	usecase "github.com/llravell/go-pass/internal/usecase/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc"
@@ -38,15 +37,41 @@ func (r *noteUploadReader) Read(p []byte) (int, error) {
 	return n, nil
 }
 
+type FilesUseCase interface {
+	UploadFile(
+		ctx context.Context,
+		userID int,
+		file *entity.File,
+		fileReader io.Reader,
+	) error
+	DownloadFile(
+		ctx context.Context,
+		userID int,
+		bucket string,
+		name string,
+	) (io.ReadCloser, error)
+	GetFiles(
+		ctx context.Context,
+		userID int,
+		bucket string,
+	) ([]*entity.File, error)
+	DeleteFile(
+		ctx context.Context,
+		userID int,
+		bucket string,
+		name string,
+	) error
+}
+
 type NotesServer struct {
 	pb.UnimplementedNotesServer
 
-	filesUC *usecase.FilesUseCase
+	filesUC FilesUseCase
 	log     *zerolog.Logger
 }
 
 func NewNotesServer(
-	filesUC *usecase.FilesUseCase,
+	filesUC FilesUseCase,
 	log *zerolog.Logger,
 ) *NotesServer {
 	return &NotesServer{
@@ -130,7 +155,7 @@ func (s *NotesServer) Download(in *pb.NotesDownloadRequest, stream grpc.ServerSt
 	return nil
 }
 
-func (s *NotesServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.NotesGetListResponse, error) {
+func (s *NotesServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.NotesListResponse, error) {
 	userID, ok := GetUserIDFromContext(ctx)
 	if !ok {
 		s.log.Error().Msg("getting userID from ctx failed")
@@ -145,7 +170,7 @@ func (s *NotesServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.NotesG
 		return nil, status.Error(codes.Internal, "fetching notes failed")
 	}
 
-	response := &pb.NotesGetListResponse{
+	response := &pb.NotesListResponse{
 		Notes: make([]*pb.FileInfo, 0, len(notes)),
 	}
 

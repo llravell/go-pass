@@ -6,22 +6,27 @@ import (
 	"time"
 
 	"github.com/llravell/go-pass/internal/entity"
-	usecase "github.com/llravell/go-pass/internal/usecase/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
+type AuthUseCase interface {
+	RegisterUser(ctx context.Context, login string, password string) (*entity.User, error)
+	BuildUserToken(user *entity.User, ttl time.Duration) (string, error)
+	VerifyUser(ctx context.Context, login string, password string) (*entity.User, error)
+}
+
 type AuthServer struct {
 	pb.UnimplementedAuthServer
 
-	authUC *usecase.AuthUseCase
+	authUC AuthUseCase
 	log    *zerolog.Logger
 }
 
 func NewAuthServer(
-	authUC *usecase.AuthUseCase,
+	authUC AuthUseCase,
 	log *zerolog.Logger,
 ) *AuthServer {
 	return &AuthServer{

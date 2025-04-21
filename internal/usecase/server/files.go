@@ -35,9 +35,19 @@ func (uc *FilesUseCase) UploadFile(
 	file *entity.File,
 	fileReader io.Reader,
 ) error {
-	return uc.repo.UploadFile(ctx, userID, file, func() (int64, error) {
+	uploadFn := func() (int64, error) {
 		return uc.s3Storage.UploadFile(ctx, file, fileReader)
-	})
+	}
+
+	deleteFn := func() error {
+		return uc.fileDeletingWP.QueueWork(&FileDeleteWork{
+			file:      file,
+			s3Storage: uc.s3Storage,
+			log:       uc.log,
+		})
+	}
+
+	return uc.repo.UploadFile(ctx, userID, file, uploadFn, deleteFn)
 }
 
 func (uc *FilesUseCase) DownloadFile(

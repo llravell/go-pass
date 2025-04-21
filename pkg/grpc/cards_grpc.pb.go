@@ -20,9 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Cards_Sync_FullMethodName    = "/api.cards.Cards/Sync"
-	Cards_Delete_FullMethodName  = "/api.cards.Cards/Delete"
-	Cards_GetList_FullMethodName = "/api.cards.Cards/GetList"
+	Cards_Sync_FullMethodName   = "/api.cards.Cards/Sync"
+	Cards_Delete_FullMethodName = "/api.cards.Cards/Delete"
+	Cards_List_FullMethodName   = "/api.cards.Cards/List"
 )
 
 // CardsClient is the client API for Cards service.
@@ -31,7 +31,7 @@ const (
 type CardsClient interface {
 	Sync(ctx context.Context, in *Card, opts ...grpc.CallOption) (*CardSyncResponse, error)
 	Delete(ctx context.Context, in *CardDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CardGetListResponse, error)
+	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CardListResponse, error)
 }
 
 type cardsClient struct {
@@ -62,10 +62,10 @@ func (c *cardsClient) Delete(ctx context.Context, in *CardDeleteRequest, opts ..
 	return out, nil
 }
 
-func (c *cardsClient) GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CardGetListResponse, error) {
+func (c *cardsClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*CardListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CardGetListResponse)
-	err := c.cc.Invoke(ctx, Cards_GetList_FullMethodName, in, out, cOpts...)
+	out := new(CardListResponse)
+	err := c.cc.Invoke(ctx, Cards_List_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +78,7 @@ func (c *cardsClient) GetList(ctx context.Context, in *emptypb.Empty, opts ...gr
 type CardsServer interface {
 	Sync(context.Context, *Card) (*CardSyncResponse, error)
 	Delete(context.Context, *CardDeleteRequest) (*emptypb.Empty, error)
-	GetList(context.Context, *emptypb.Empty) (*CardGetListResponse, error)
+	List(context.Context, *emptypb.Empty) (*CardListResponse, error)
 	mustEmbedUnimplementedCardsServer()
 }
 
@@ -95,8 +95,8 @@ func (UnimplementedCardsServer) Sync(context.Context, *Card) (*CardSyncResponse,
 func (UnimplementedCardsServer) Delete(context.Context, *CardDeleteRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
 }
-func (UnimplementedCardsServer) GetList(context.Context, *emptypb.Empty) (*CardGetListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetList not implemented")
+func (UnimplementedCardsServer) List(context.Context, *emptypb.Empty) (*CardListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedCardsServer) mustEmbedUnimplementedCardsServer() {}
 func (UnimplementedCardsServer) testEmbeddedByValue()               {}
@@ -155,20 +155,20 @@ func _Cards_Delete_Handler(srv interface{}, ctx context.Context, dec func(interf
 	return interceptor(ctx, in, info, handler)
 }
 
-func _Cards_GetList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Cards_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(CardsServer).GetList(ctx, in)
+		return srv.(CardsServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Cards_GetList_FullMethodName,
+		FullMethod: Cards_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CardsServer).GetList(ctx, req.(*emptypb.Empty))
+		return srv.(CardsServer).List(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -189,8 +189,8 @@ var Cards_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _Cards_Delete_Handler,
 		},
 		{
-			MethodName: "GetList",
-			Handler:    _Cards_GetList_Handler,
+			MethodName: "List",
+			Handler:    _Cards_List_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

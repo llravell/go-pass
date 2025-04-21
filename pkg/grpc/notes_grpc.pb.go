@@ -20,7 +20,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Notes_GetList_FullMethodName  = "/api.notes.Notes/GetList"
+	Notes_List_FullMethodName     = "/api.notes.Notes/List"
 	Notes_Upload_FullMethodName   = "/api.notes.Notes/Upload"
 	Notes_Download_FullMethodName = "/api.notes.Notes/Download"
 	Notes_Delete_FullMethodName   = "/api.notes.Notes/Delete"
@@ -30,7 +30,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type NotesClient interface {
-	GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NotesGetListResponse, error)
+	List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NotesListResponse, error)
 	Upload(ctx context.Context, opts ...grpc.CallOption) (grpc.ClientStreamingClient[FileChunk, NotesUploadResponse], error)
 	Download(ctx context.Context, in *NotesDownloadRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[FileChunk], error)
 	Delete(ctx context.Context, in *NotesDeleteRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
@@ -44,10 +44,10 @@ func NewNotesClient(cc grpc.ClientConnInterface) NotesClient {
 	return &notesClient{cc}
 }
 
-func (c *notesClient) GetList(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NotesGetListResponse, error) {
+func (c *notesClient) List(ctx context.Context, in *emptypb.Empty, opts ...grpc.CallOption) (*NotesListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(NotesGetListResponse)
-	err := c.cc.Invoke(ctx, Notes_GetList_FullMethodName, in, out, cOpts...)
+	out := new(NotesListResponse)
+	err := c.cc.Invoke(ctx, Notes_List_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +100,7 @@ func (c *notesClient) Delete(ctx context.Context, in *NotesDeleteRequest, opts .
 // All implementations must embed UnimplementedNotesServer
 // for forward compatibility.
 type NotesServer interface {
-	GetList(context.Context, *emptypb.Empty) (*NotesGetListResponse, error)
+	List(context.Context, *emptypb.Empty) (*NotesListResponse, error)
 	Upload(grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]) error
 	Download(*NotesDownloadRequest, grpc.ServerStreamingServer[FileChunk]) error
 	Delete(context.Context, *NotesDeleteRequest) (*emptypb.Empty, error)
@@ -114,8 +114,8 @@ type NotesServer interface {
 // pointer dereference when methods are called.
 type UnimplementedNotesServer struct{}
 
-func (UnimplementedNotesServer) GetList(context.Context, *emptypb.Empty) (*NotesGetListResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetList not implemented")
+func (UnimplementedNotesServer) List(context.Context, *emptypb.Empty) (*NotesListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method List not implemented")
 }
 func (UnimplementedNotesServer) Upload(grpc.ClientStreamingServer[FileChunk, NotesUploadResponse]) error {
 	return status.Errorf(codes.Unimplemented, "method Upload not implemented")
@@ -147,20 +147,20 @@ func RegisterNotesServer(s grpc.ServiceRegistrar, srv NotesServer) {
 	s.RegisterService(&Notes_ServiceDesc, srv)
 }
 
-func _Notes_GetList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _Notes_List_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(emptypb.Empty)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(NotesServer).GetList(ctx, in)
+		return srv.(NotesServer).List(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: Notes_GetList_FullMethodName,
+		FullMethod: Notes_List_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NotesServer).GetList(ctx, req.(*emptypb.Empty))
+		return srv.(NotesServer).List(ctx, req.(*emptypb.Empty))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -209,8 +209,8 @@ var Notes_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*NotesServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetList",
-			Handler:    _Notes_GetList_Handler,
+			MethodName: "List",
+			Handler:    _Notes_List_Handler,
 		},
 		{
 			MethodName: "Delete",

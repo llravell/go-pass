@@ -12,7 +12,7 @@ CREATE TABLE cards (
   is_deleted boolean DEFAULT FALSE,
   expiration_date DATE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (user_id, name),
+  CONSTRAINT unique_user_card UNIQUE (user_id, name),
   CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id)
 );
 -- +goose StatementEnd

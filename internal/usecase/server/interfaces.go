@@ -43,6 +43,7 @@ type (
 			userID int,
 			file *entity.File,
 			uploadFn func() (int64, error),
+			deleteFn func() error,
 		) error
 		GetFileByName(
 			ctx context.Context,

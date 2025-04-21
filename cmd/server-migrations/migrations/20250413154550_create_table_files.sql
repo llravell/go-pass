@@ -12,7 +12,7 @@ CREATE TABLE files (
   upload_status upload_status NOT NULL,
   is_deleted boolean DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE (user_id, minio_bucket, name),
+  CONSTRAINT unique_user_bucket_file UNIQUE (user_id, minio_bucket, name),
   CONSTRAINT fk_user FOREIGN KEY(user_id) REFERENCES users(id)
 );
 -- +goose StatementEnd

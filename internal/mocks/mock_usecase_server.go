@@ -305,17 +305,17 @@ func (mr *MockFilesRepositoryMockRecorder) GetFiles(ctx, userID, bucket any) *go
 }
 
 // UploadFile mocks base method.
-func (m *MockFilesRepository) UploadFile(ctx context.Context, userID int, file *entity.File, uploadFn func() (int64, error)) error {
+func (m *MockFilesRepository) UploadFile(ctx context.Context, userID int, file *entity.File, uploadFn func() (int64, error), deleteFn func() error) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UploadFile", ctx, userID, file, uploadFn)
+	ret := m.ctrl.Call(m, "UploadFile", ctx, userID, file, uploadFn, deleteFn)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UploadFile indicates an expected call of UploadFile.
-func (mr *MockFilesRepositoryMockRecorder) UploadFile(ctx, userID, file, uploadFn any) *gomock.Call {
+func (mr *MockFilesRepositoryMockRecorder) UploadFile(ctx, userID, file, uploadFn, deleteFn any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadFile", reflect.TypeOf((*MockFilesRepository)(nil).UploadFile), ctx, userID, file, uploadFn)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UploadFile", reflect.TypeOf((*MockFilesRepository)(nil).UploadFile), ctx, userID, file, uploadFn, deleteFn)
 }
 
 // MockFilesS3Storage is a mock of FilesS3Storage interface.

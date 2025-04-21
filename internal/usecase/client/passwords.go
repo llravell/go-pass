@@ -186,7 +186,7 @@ func (p *PasswordsUseCase) fetchLocalAndServerPasswords(
 	})
 
 	group.Go(func() error {
-		response, err := p.passwordsClient.GetList(ctx, &emptypb.Empty{})
+		response, err := p.passwordsClient.List(ctx, &emptypb.Empty{})
 		if err != nil {
 			return err
 		}

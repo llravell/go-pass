@@ -10,7 +10,7 @@ option go_package = "pkg/grpc";
 service Cards {
   rpc Sync(Card) returns (CardSyncResponse);
   rpc Delete(CardDeleteRequest) returns (google.protobuf.Empty);
-  rpc GetList(google.protobuf.Empty) returns (CardGetListResponse);
+  rpc List(google.protobuf.Empty) returns (CardListResponse);
 }
 
 message Card {
@@ -37,6 +37,6 @@ message CardDeleteRequest {
   string name = 1;
 }
 
-message CardGetListResponse {
+message CardListResponse {
   repeated Card cards = 1;
 }

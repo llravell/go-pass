@@ -23,20 +23,20 @@ func (e *testSyncEntity) IsDeleted() bool {
 
 var _ entity.SyncEntity = (*testSyncEntity)(nil)
 
-func TestChooseMostActuralEntity(t *testing.T) {
+func TestChooseMostActualEntity(t *testing.T) {
 	t.Run("incoming entity would be more actual if has greater version", func(t *testing.T) {
 		current := &testSyncEntity{}
 		incoming := &testSyncEntity{}
 
 		incoming.version++
 
-		mostActualPass, err := entity.ChooseMostActuralEntity(current, incoming)
+		mostActualPass, err := entity.ChooseMostActualEntity(current, incoming)
 		require.Nil(t, err)
 
 		assert.Equal(t, incoming, mostActualPass)
 
 		current.deleted = true
-		mostActualPass, err = entity.ChooseMostActuralEntity(current, incoming)
+		mostActualPass, err = entity.ChooseMostActualEntity(current, incoming)
 		require.Nil(t, err)
 
 		assert.Equal(t, incoming, mostActualPass)
@@ -49,7 +49,7 @@ func TestChooseMostActuralEntity(t *testing.T) {
 		current.version++
 		current.deleted = true
 
-		_, err := entity.ChooseMostActuralEntity(current, incoming)
+		_, err := entity.ChooseMostActualEntity(current, incoming)
 		require.NotNil(t, err)
 
 		assert.Equal(t, entity.DeletedConflictType, err.Type())
@@ -63,7 +63,7 @@ func TestChooseMostActuralEntity(t *testing.T) {
 
 		current.version++
 
-		_, err := entity.ChooseMostActuralEntity(current, incoming)
+		_, err := entity.ChooseMostActualEntity(current, incoming)
 		require.NotNil(t, err)
 
 		assert.Equal(t, entity.DiffConflictType, err.Type())

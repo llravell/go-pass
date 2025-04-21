@@ -23,6 +23,7 @@ func (repo *FilesPostgresRepository) UploadFile(
 	userID int,
 	file *entity.File,
 	uploadFn func() (int64, error),
+	deleteFn func() error,
 ) error {
 	return runInTx(ctx, repo.conn, func(tx *sql.Tx) error {
 		var uploadStatus string
@@ -39,7 +40,7 @@ func (repo *FilesPostgresRepository) UploadFile(
 			return err
 		}
 
-		if uploadStatus == "pending" {
+		if uploadStatus == string(entity.FileUploadStatusPending) {
 			return entity.ErrFileAlreadyUploading
 		}
 
@@ -64,7 +65,7 @@ func (repo *FilesPostgresRepository) UploadFile(
 			WHERE user_id=$3 AND minio_bucket=$4 AND name=$5;
     `, fileSize, file.Meta, userID, file.MinioBucket, file.Name)
 		if err != nil {
-			return err
+			return deleteFn()
 		}
 
 		return nil
@@ -141,10 +142,6 @@ func (repo *FilesPostgresRepository) GetFiles(
 	}
 
 	if err = rows.Err(); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return files, nil
-		}
-
 		return nil, err
 	}
 

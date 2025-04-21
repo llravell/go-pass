@@ -75,7 +75,7 @@ func TestPasswordsServer_GetList(t *testing.T) {
 				{Name: "b"},
 			}, nil)
 
-		resp, err := client.GetList(t.Context(), &emptypb.Empty{})
+		resp, err := client.List(t.Context(), &emptypb.Empty{})
 		require.NoError(t, err)
 
 		passwords := resp.GetPasswords()
@@ -92,7 +92,7 @@ func TestPasswordsServer_GetList(t *testing.T) {
 			GetPasswords(gomock.Any(), defaultUserID).
 			Return(nil, errBoom)
 
-		_, err := client.GetList(t.Context(), &emptypb.Empty{})
+		_, err := client.List(t.Context(), &emptypb.Empty{})
 
 		status, ok := status.FromError(err)
 		require.True(t, ok)

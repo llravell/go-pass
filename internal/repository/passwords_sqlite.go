@@ -47,10 +47,6 @@ func (repo *PasswordsSqliteRepository) GetPasswords(
 	}
 
 	if err = rows.Err(); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return passwords, nil
-		}
-
 		return nil, err
 	}
 

@@ -47,10 +47,6 @@ func (repo *PasswordsPostgresRepository) GetPasswords(
 	}
 
 	if err = rows.Err(); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return passwords, nil
-		}
-
 		return nil, err
 	}
 
@@ -98,16 +94,19 @@ func (repo *PasswordsPostgresRepository) UpdateByName(
 	updateFn func(password *entity.Password) (*entity.Password, error),
 ) error {
 	return runInTx(ctx, repo.conn, func(tx *sql.Tx) error {
-		var pass entity.Password
+		var (
+			pass   entity.Password
+			passID int
+		)
 
 		row := tx.QueryRowContext(ctx, `
-			SELECT name, encrypted_pass, meta, version, is_deleted
+			SELECT id, name, encrypted_pass, meta, version, is_deleted
 			FROM passwords
 			WHERE user_id=$1 AND name=$2
 			FOR UPDATE;
 		`, userID, name)
 
-		err := row.Scan(&pass.Name, &pass.Value, &pass.Meta, &pass.Version, &pass.Deleted)
+		err := row.Scan(&passID, &pass.Name, &pass.Value, &pass.Meta, &pass.Version, &pass.Deleted)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return entity.ErrPasswordDoesNotExist
@@ -128,8 +127,8 @@ func (repo *PasswordsPostgresRepository) UpdateByName(
 		_, err = tx.ExecContext(ctx, `
 			UPDATE passwords
 			SET encrypted_pass=$1, meta=$2, version=$3, is_deleted=$4
-			WHERE user_id=$5 AND name=$6;
-		`, updatedPass.Value, updatedPass.Meta, updatedPass.Version, updatedPass.Deleted, userID, pass.Name)
+			WHERE id=$5;
+		`, updatedPass.Value, updatedPass.Meta, updatedPass.Version, updatedPass.Deleted, passID)
 		if err != nil {
 			return err
 		}

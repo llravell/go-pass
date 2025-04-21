@@ -8,13 +8,13 @@ package api.notes;
 option go_package = "pkg/grpc";
 
 service Notes {
-  rpc GetList(google.protobuf.Empty) returns (NotesGetListResponse);
+  rpc List(google.protobuf.Empty) returns (NotesListResponse);
   rpc Upload(stream file.FileChunk) returns (NotesUploadResponse);
   rpc Download(NotesDownloadRequest) returns (stream file.FileChunk);
   rpc Delete(NotesDeleteRequest) returns (google.protobuf.Empty);
 }
 
-message NotesGetListResponse {
+message NotesListResponse {
   repeated file.FileInfo notes = 1;
 }
 
