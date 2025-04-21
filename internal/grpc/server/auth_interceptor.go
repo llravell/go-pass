@@ -27,7 +27,28 @@ func GetUserIDFromContext(ctx context.Context) (int, bool) {
 	return id, ok
 }
 
-func getUserIDFromToken(token *jwt.Token) int {
+type authChecker struct {
+	jwtParser JWTParser
+}
+
+func (checker *authChecker) Check(ctx context.Context) (context.Context, error) {
+	tokenString, err := auth.AuthFromMD(ctx, "bearer")
+	if err != nil {
+		return nil, err
+	}
+
+	token, err := checker.jwtParser.Parse(tokenString)
+	if err != nil || !token.Valid {
+		return nil, status.Error(codes.Unauthenticated, "invalid auth token")
+	}
+
+	userID := checker.getUserIDFromToken(token)
+	ctx = logging.InjectFields(ctx, logging.Fields{"auth.sub", userID})
+
+	return context.WithValue(ctx, UserIDContextKey, userID), nil
+}
+
+func (checker *authChecker) getUserIDFromToken(token *jwt.Token) int {
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok {
 		return 0
@@ -49,20 +70,19 @@ func getUserIDFromToken(token *jwt.Token) int {
 func AuthInterceptor(
 	jwtParser JWTParser,
 ) grpc.UnaryServerInterceptor {
+	checker := &authChecker{jwtParser}
+
 	return auth.UnaryServerInterceptor(func(ctx context.Context) (context.Context, error) {
-		tokenString, err := auth.AuthFromMD(ctx, "bearer")
-		if err != nil {
-			return nil, err
-		}
+		return checker.Check(ctx)
+	})
+}
 
-		token, err := jwtParser.Parse(tokenString)
-		if err != nil || !token.Valid {
-			return nil, status.Error(codes.Unauthenticated, "invalid auth token")
-		}
+func AuthStreamInterceptor(
+	jwtParser JWTParser,
+) grpc.StreamServerInterceptor {
+	checker := &authChecker{jwtParser}
 
-		userID := getUserIDFromToken(token)
-		ctx = logging.InjectFields(ctx, logging.Fields{"auth.sub", userID})
-
-		return context.WithValue(ctx, UserIDContextKey, userID), nil
+	return auth.StreamServerInterceptor(func(ctx context.Context) (context.Context, error) {
+		return checker.Check(ctx)
 	})
 }

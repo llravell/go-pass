@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package api.file;
+
+option go_package = "pkg/grpc";
+
+message FileChunk {
+  string filename = 1;
+  string meta = 2;
+  bytes data = 3;
+}
+
+message FileInfo {
+  string name = 1;
+  string meta = 2;
+  int64 size = 3;
+}

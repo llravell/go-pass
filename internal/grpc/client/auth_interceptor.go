@@ -42,3 +42,30 @@ func AuthInterceptor(
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
+
+func AuthStreamInterceptor(
+	sessionRepo SessionRepository,
+) grpc.StreamClientInterceptor {
+	return func(
+		ctx context.Context,
+		desc *grpc.StreamDesc,
+		cc *grpc.ClientConn,
+		method string,
+		streamer grpc.Streamer,
+		opts ...grpc.CallOption,
+	) (grpc.ClientStream, error) {
+		session, err := sessionRepo.GetSession(ctx)
+		if err != nil {
+			return streamer(ctx, desc, cc, method, opts...)
+		}
+
+		if len(session.AuthToken) == 0 {
+			return streamer(ctx, desc, cc, method, opts...)
+		}
+
+		authorize := "bearer " + session.AuthToken
+		ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs(headerAuthorize, authorize))
+
+		return streamer(ctx, desc, cc, method, opts...)
+	}
+}

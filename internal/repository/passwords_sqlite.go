@@ -47,10 +47,6 @@ func (repo *PasswordsSqliteRepository) GetPasswords(
 	}
 
 	if err = rows.Err(); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return passwords, nil
-		}
-
 		return nil, err
 	}
 
@@ -108,17 +104,23 @@ func (repo *PasswordsSqliteRepository) PasswordExists(
 func (repo *PasswordsSqliteRepository) CreateNewPassword(
 	ctx context.Context,
 	password *entity.Password,
-) error {
-	_, err := repo.conn.ExecContext(ctx, `
+) (bool, error) {
+	res, err := repo.conn.ExecContext(ctx, `
 		INSERT INTO passwords (name, encrypted_pass, meta, version)
 		VALUES
-			(?, ?, ?, ?);
+			(?, ?, ?, ?)
+		ON CONFLICT(name) DO NOTHING;
 	`, password.Name, password.Value, password.Meta, password.Version)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	return nil
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+
+	return affected > 0, nil
 }
 
 func (repo *PasswordsSqliteRepository) CreatePasswordsMultiple(
@@ -133,6 +135,7 @@ func (repo *PasswordsSqliteRepository) CreatePasswordsMultiple(
 		args = append(args, password.Name, password.Value, password.Meta, password.Version)
 	}
 
+	//nolint:gosec
 	query := fmt.Sprintf(`
 		INSERT INTO passwords (name, encrypted_pass, meta, version)
 		VALUES %s;

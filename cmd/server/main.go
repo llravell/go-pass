@@ -13,9 +13,17 @@ import (
 	"github.com/llravell/go-pass/logger"
 	"github.com/llravell/go-pass/pkg/auth"
 	pb "github.com/llravell/go-pass/pkg/grpc"
+	"github.com/llravell/go-pass/pkg/workerpool"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"google.golang.org/grpc"
 )
 
+const (
+	fileDeletingWorkersAmount = 4
+)
+
+//nolint:funlen
 func main() {
 	log := logger.Get()
 
@@ -31,6 +39,15 @@ func main() {
 
 	defer db.Close()
 
+	minioClient, err := minio.New(cfg.MinioAddr, &minio.Options{
+		Creds: credentials.NewStaticV4(cfg.MinioAccessKeyID, cfg.MinioSecretAccessKey, ""),
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("initialize minio client error")
+
+		return
+	}
+
 	listen, err := net.Listen("tcp", cfg.Addr)
 	if err != nil {
 		log.Error().Err(err).Msg("tcp listen error")
@@ -42,12 +59,21 @@ func main() {
 
 	usersRepository := repository.NewUsersRepository(db)
 	passwordsRepository := repository.NewPasswordsPostgresRepository(db)
+	cardsRepository := repository.NewCardsPostgresRepository(db)
+	filesRepository := repository.NewFilesPostgresRepository(db)
+	filesS3Storage := repository.NewFilesMinioStorage(minioClient)
+
+	fileDeletingWorkerPool := workerpool.New[*usecase.FileDeleteWork](fileDeletingWorkersAmount)
 
 	authUsecase := usecase.NewAuthUseCase(usersRepository, jwtManager)
 	passwordsUsecase := usecase.NewPasswordsUseCase(passwordsRepository)
+	cardsUsecase := usecase.NewCardsUseCase(cardsRepository)
+	filesUsecase := usecase.NewFilesUseCase(filesRepository, filesS3Storage, fileDeletingWorkerPool, &log)
 
 	authServer := server.NewAuthServer(authUsecase, &log)
 	passwordsServer := server.NewPasswordsServer(passwordsUsecase, &log)
+	cardsServer := server.NewCardsServer(cardsUsecase, &log)
+	notesServer := server.NewNotesServer(filesUsecase, &log)
 
 	loggingOpts := []logging.Option{
 		logging.WithLogOnEvents(logging.StartCall, logging.FinishCall),
@@ -57,9 +83,23 @@ func main() {
 			server.AuthInterceptor(jwtManager),
 			logging.UnaryServerInterceptor(server.Logger(&log), loggingOpts...),
 		),
+		grpc.ChainStreamInterceptor(
+			server.AuthStreamInterceptor(jwtManager),
+		),
 	)
 	pb.RegisterAuthServer(srv, authServer)
 	pb.RegisterPasswordsServer(srv, passwordsServer)
+	pb.RegisterCardsServer(srv, cardsServer)
+	pb.RegisterNotesServer(srv, notesServer)
+
+	fileDeletingWorkerPool.ProcessQueue()
+
+	defer func() {
+		fileDeletingWorkerPool.Close()
+
+		log.Info().Msg("file deleting worker pool closing...")
+		fileDeletingWorkerPool.Wait()
+	}()
 
 	log.Info().Msgf("server started on %s", cfg.Addr)
 

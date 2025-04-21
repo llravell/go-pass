@@ -5,6 +5,7 @@ import (
 	"os/exec"
 )
 
+// EditViaVI дает пользователю отредактировать текст в редакторе vi.
 func EditViaVI(text string) (string, error) {
 	tmpFile, err := os.CreateTemp("", "text_*.txt")
 	if err != nil {

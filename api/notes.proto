@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "api/file.proto";
+
+package api.notes;
+
+option go_package = "pkg/grpc";
+
+service Notes {
+  rpc List(google.protobuf.Empty) returns (NotesListResponse);
+  rpc Upload(stream file.FileChunk) returns (NotesUploadResponse);
+  rpc Download(NotesDownloadRequest) returns (stream file.FileChunk);
+  rpc Delete(NotesDeleteRequest) returns (google.protobuf.Empty);
+}
+
+message NotesListResponse {
+  repeated file.FileInfo notes = 1;
+}
+
+message NotesUploadResponse {
+  bool success = 1;
+}
+
+message NotesDownloadRequest {
+  string name = 1;
+}
+
+message NotesDeleteRequest {
+  string name = 1;
+}

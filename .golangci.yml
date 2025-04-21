@@ -13,6 +13,7 @@ linters:
     - testifylint
     - testpackage
     - wrapcheck
+    - dupl
   settings:
     depguard:
       rules:
@@ -34,6 +35,8 @@ linters:
         - w http.ResponseWriter
         - r *http.Request
         - r chi.Router
+        - n int
+        - p []byte
   exclusions:
     generated: lax
     presets:

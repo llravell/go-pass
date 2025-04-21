@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/llravell/go-pass/internal/entity"
-	usecase "github.com/llravell/go-pass/internal/usecase/server"
 	pb "github.com/llravell/go-pass/pkg/grpc"
 	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
@@ -13,15 +12,32 @@ import (
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
+type PasswordsUseCase interface {
+	SyncPassword(
+		ctx context.Context,
+		userID int,
+		password *entity.Password,
+	) error
+	DeletePasswordByName(
+		ctx context.Context,
+		userID int,
+		name string,
+	) error
+	GetPasswords(
+		ctx context.Context,
+		userID int,
+	) ([]*entity.Password, error)
+}
+
 type PasswordsServer struct {
 	pb.UnimplementedPasswordsServer
 
-	passwordsUC *usecase.PasswordsUseCase
+	passwordsUC PasswordsUseCase
 	log         *zerolog.Logger
 }
 
 func NewPasswordsServer(
-	passwordsUC *usecase.PasswordsUseCase,
+	passwordsUC PasswordsUseCase,
 	log *zerolog.Logger,
 ) *PasswordsServer {
 	return &PasswordsServer{
@@ -39,30 +55,29 @@ func (s *PasswordsServer) Sync(ctx context.Context, in *pb.Password) (*pb.Passwo
 	}
 
 	err := s.passwordsUC.SyncPassword(ctx, userID, entity.NewPasswordFromPB(in))
+	if err != nil {
+		var conflictErr *entity.ConflictError[*entity.Password]
 
-	if err == nil {
-		return &pb.PasswordSyncResponse{Success: true}, nil
+		if errors.As(err, &conflictErr) {
+			s.log.Info().
+				Str("conflict_type", string(conflictErr.Type())).
+				Msg("sync conflict")
+
+			return &pb.PasswordSyncResponse{
+				Success: false,
+				Conflict: &pb.PasswordConflict{
+					Password: conflictErr.Actual().ToPB(),
+					Type:     conflictErr.TypePB(),
+				},
+			}, nil
+		}
+
+		s.log.Error().Err(err).Msg("sync failed")
+
+		return nil, status.Error(codes.Internal, "sync failed")
 	}
 
-	var conflictErr *entity.PasswordConflictError
-
-	if errors.As(err, &conflictErr) {
-		s.log.Info().
-			Str("conflict_type", string(conflictErr.Type())).
-			Msg("sync conflict")
-
-		return &pb.PasswordSyncResponse{
-			Success: false,
-			Conflict: &pb.Conflict{
-				Password: conflictErr.Actual().ToPB(),
-				Type:     conflictErr.TypePB(),
-			},
-		}, nil
-	}
-
-	s.log.Error().Err(err).Msg("sync failed")
-
-	return nil, status.Error(codes.Unknown, "sync failed")
+	return &pb.PasswordSyncResponse{Success: true}, nil
 }
 
 func (s *PasswordsServer) Delete(ctx context.Context, in *pb.PasswordDeleteRequest) (*emptypb.Empty, error) {
@@ -77,13 +92,13 @@ func (s *PasswordsServer) Delete(ctx context.Context, in *pb.PasswordDeleteReque
 	if err != nil {
 		s.log.Error().Err(err).Msg("password deleting failed")
 
-		return nil, status.Error(codes.Unknown, "deleting failed")
+		return nil, status.Error(codes.Internal, "deleting failed")
 	}
 
 	return &emptypb.Empty{}, nil
 }
 
-func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.PasswordGetListResponse, error) {
+func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.PasswordListResponse, error) {
 	userID, ok := GetUserIDFromContext(ctx)
 	if !ok {
 		s.log.Error().Msg("getting userID from ctx failed")
@@ -91,14 +106,14 @@ func (s *PasswordsServer) GetList(ctx context.Context, _ *emptypb.Empty) (*pb.Pa
 		return nil, status.Error(codes.Unauthenticated, "failed to resolve user id")
 	}
 
-	passwords, err := s.passwordsUC.GetList(ctx, userID)
+	passwords, err := s.passwordsUC.GetPasswords(ctx, userID)
 	if err != nil {
-		s.log.Error().Err(err).Msg("password deleting failed")
+		s.log.Error().Err(err).Msg("passwords fetching failed")
 
-		return nil, status.Error(codes.Unknown, "deleting failed")
+		return nil, status.Error(codes.Internal, "passwords fetching failed")
 	}
 
-	response := &pb.PasswordGetListResponse{
+	response := &pb.PasswordListResponse{
 		Passwords: make([]*pb.Password, 0, len(passwords)),
 	}
 

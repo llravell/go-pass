@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package api.conflict;
+
+option go_package = "pkg/grpc";
+
+enum ConflictType {
+  DIFF = 0;
+  DELETED = 1;
+}

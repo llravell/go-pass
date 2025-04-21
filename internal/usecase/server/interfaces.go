@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"io"
 	"time"
 
 	"github.com/llravell/go-pass/internal/entity"
@@ -14,7 +15,6 @@ type (
 		StoreUser(ctx context.Context, login string, password string) (*entity.User, error)
 		FindUserByLogin(ctx context.Context, login string) (*entity.User, error)
 	}
-
 	PasswordsRepository interface {
 		UpdateByName(
 			ctx context.Context,
@@ -26,7 +26,61 @@ type (
 		DeletePasswordByName(ctx context.Context, userID int, name string) error
 		GetPasswords(ctx context.Context, userID int) ([]*entity.Password, error)
 	}
-
+	CardsRepository interface {
+		UpdateByName(
+			ctx context.Context,
+			userID int,
+			name string,
+			updateFn func(password *entity.Card) (*entity.Card, error),
+		) error
+		AddNewCard(ctx context.Context, userID int, card *entity.Card) error
+		DeleteCardByName(ctx context.Context, userID int, name string) error
+		GetCards(ctx context.Context, userID int) ([]*entity.Card, error)
+	}
+	FilesRepository interface {
+		UploadFile(
+			ctx context.Context,
+			userID int,
+			file *entity.File,
+			uploadFn func() (int64, error),
+			deleteFn func() error,
+		) error
+		GetFileByName(
+			ctx context.Context,
+			userID int,
+			bucket string,
+			name string,
+		) (*entity.File, error)
+		GetFiles(
+			ctx context.Context,
+			userID int,
+			bucket string,
+		) ([]*entity.File, error)
+		DeleteFileByName(
+			ctx context.Context,
+			userID int,
+			bucket string,
+			name string,
+		) error
+	}
+	FilesS3Storage interface {
+		UploadFile(
+			ctx context.Context,
+			file *entity.File,
+			fileReader io.Reader,
+		) (int64, error)
+		DownloadFile(
+			ctx context.Context,
+			file *entity.File,
+		) (io.ReadCloser, error)
+		DeleteFile(
+			ctx context.Context,
+			file *entity.File,
+		) error
+	}
+	FileDeletingWorkerPool interface {
+		QueueWork(w *FileDeleteWork) error
+	}
 	JWTIssuer interface {
 		Issue(userID int, ttl time.Duration) (string, error)
 	}

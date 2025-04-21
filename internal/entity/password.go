@@ -13,12 +13,20 @@ type Password struct {
 	Deleted bool
 }
 
+func (pass *Password) GetVersion() int {
+	return pass.Version
+}
+
+func (pass *Password) IsDeleted() bool {
+	return pass.Deleted
+}
+
 func (pass *Password) BumpVersion() {
 	pass.Version++
 }
 
 func (pass *Password) Open(key *encryption.Key) error {
-	decryptedValue, err := key.Decrypt(pass.Value)
+	decryptedValue, err := encryption.DecryptString(key, pass.Value)
 	if err != nil {
 		return err
 	}
@@ -29,7 +37,7 @@ func (pass *Password) Open(key *encryption.Key) error {
 }
 
 func (pass *Password) Close(key *encryption.Key) error {
-	encryptedValue, err := key.Encrypt(pass.Value)
+	encryptedValue, err := encryption.EncryptString(key, pass.Value)
 	if err != nil {
 		return err
 	}
@@ -41,8 +49,19 @@ func (pass *Password) Close(key *encryption.Key) error {
 
 func (pass *Password) Equal(target *Password) bool {
 	return (pass.Name == target.Name &&
+		pass.Value == target.Value &&
 		pass.Meta == target.Meta &&
 		pass.Version == target.Version)
+}
+
+func (pass *Password) Clone() *Password {
+	return &Password{
+		Name:    pass.Name,
+		Value:   pass.Value,
+		Meta:    pass.Meta,
+		Version: pass.Version,
+		Deleted: pass.Deleted,
+	}
 }
 
 func (pass *Password) ToPB() *pb.Password {
